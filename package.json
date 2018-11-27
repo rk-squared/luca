@@ -1,0 +1,22 @@
+{
+  "name": "luca",
+  "version": "0.0.1",
+  "main": "index.js",
+  "author": "Josh Kelley <joshkel@gmail.com>",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@types/fs-extra": "^5.0.4",
+    "@types/lodash": "^4.14.118",
+    "@types/node": "^10.12.10",
+    "axios": "^0.18.0",
+    "fs-extra": "^7.0.1",
+    "js-beautify": "^1.8.8",
+    "lodash": "^4.17.11",
+    "quicktype": "^15.0.155",
+    "safe-eval": "^0.4.1",
+    "ts-node": "^7.0.1",
+    "tslint": "^5.11.0",
+    "typescript": "^3.1.6",
+    "underscore": "^1.9.1"
+  }
+}
