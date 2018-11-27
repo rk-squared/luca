@@ -9,6 +9,7 @@ const safeEval = require('safe-eval');
 
 // tslint:disable no-console max-classes-per-file
 
+const srcPath = __dirname;
 const workPath = path.join(__dirname, '..', 'tmp');
 fs.ensureDirSync(workPath);
 
@@ -160,7 +161,7 @@ function main() {
     };
   });
 
-  fs.writeFileSync(path.join(workPath, 'battle.json'), JSON.stringify(FF, null, 2));
+  fs.writeFileSync(path.join(srcPath, 'battle.json'), JSON.stringify(FF, null, 2));
 }
 
 main();

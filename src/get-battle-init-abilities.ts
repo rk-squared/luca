@@ -2,25 +2,11 @@
 
 import * as fs from 'fs-extra';
 
-import { DamageType, SchoolType } from '../app/api/schemas';
-
-import * as _ from 'lodash';
+import { attackId, damageTypeLookup, schoolTypeLookup } from './gameData';
 
 // tslint:disable no-console
 
-function makeLookup<T extends string>(enumType: any) {
-  const result: {[s: string]: T} = {};
-  for (const i of Object.keys(enumType)) {
-    result[enumType[i as any]] = i as T;
-  }
-  return result;
-}
-
-const damageTypeLookup = makeLookup(DamageType);
-const schoolTypeLookup = makeLookup(SchoolType);
-
-const attackId = 30151001;
-
+/*
 const bar = {
     category_id: '13',
     options: {
@@ -75,6 +61,7 @@ const bar = {
     action_id: '16',
     ability_id: '30231111'
   };
+*/
 
 function getArgs(options: any): number[] {
   const result = [];
@@ -96,6 +83,7 @@ function getArgs(options: any): number[] {
 
 function convertAbility(abilityData: any): any {
   const { options } = abilityData;
+  // @ts-ignore
   const args = getArgs(options);
 
   const toDo = null;  // TODO: Resolve these
@@ -108,7 +96,7 @@ function convertAbility(abilityData: any): any {
    return null;
   }
 
-  const school = _.startCase(_.toLower(schoolTypeLookup[+abilityData.category_id])) || null;
+  const school = schoolTypeLookup[+abilityData.category_id] || null;
 
   return {
     school,
