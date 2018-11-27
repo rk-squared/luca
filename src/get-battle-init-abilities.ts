@@ -2,6 +2,7 @@
 
 import * as fs from 'fs-extra';
 
+import { getNamedArgs } from './battleActions';
 import { attackId, damageTypeLookup, describeTarget, schoolTypeLookup } from './gameData';
 
 // tslint:disable no-console
@@ -63,31 +64,11 @@ const bar = {
   };
 */
 
-function getArgs(options: any): number[] {
-  const result = [];
-  for (let i = 1; i <= 30; i++) {
-    const arg = `arg${i}`;
-    if (options[arg] == null) {
-      throw new Error(`Missing ${arg}`);
-    }
-
-    const value = options[arg];
-    if (isNaN(value) || !Number.isInteger(+value)) {
-      throw new Error(`Bad ${arg} "${value}`);
-    }
-
-    result[i] = +value;
-  }
-  return result;
-}
-
 const toBool = (value: string | number) => !!+value;
 const msecToSec = (msec: string | number) => +msec / 1000;
 
 function convertAbility(abilityData: any): any {
   const { options } = abilityData;
-  // @ts-ignore
-  const args = getArgs(options);
 
   const toDo = null; // TODO: Resolve these
 
@@ -132,6 +113,7 @@ function convertAbility(abilityData: any): any {
     nameJp: toDo,
     id: +abilityData.ability_id,
     gl: true,
+    args: getNamedArgs(+abilityData.action_id, options),
   };
 }
 
