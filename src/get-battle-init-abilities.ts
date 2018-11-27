@@ -2,7 +2,7 @@
 
 import * as fs from 'fs-extra';
 
-import { attackId, damageTypeLookup, schoolTypeLookup } from './gameData';
+import { attackId, damageTypeLookup, describeTarget, schoolTypeLookup } from './gameData';
 
 // tslint:disable no-console
 
@@ -81,6 +81,9 @@ function getArgs(options: any): number[] {
   return result;
 }
 
+const toBool = (value: string | number) => !!+value;
+const msecToSec = (msec: string | number) => +msec / 1000;
+
 function convertAbility(abilityData: any): any {
   const { options } = abilityData;
   // @ts-ignore
@@ -98,20 +101,30 @@ function convertAbility(abilityData: any): any {
 
   const school = schoolTypeLookup[+abilityData.category_id] || null;
 
+  // Not yet used:
+  // const breaksDamageCap = toBool(options.max_damage_threshold_type);
+
+  // Omit options.target_death; it corresponds to TARGET_DEATH, but abilities'
+  // effects make it obvious whether they can target dead allies.
+
   return {
     school,
     name: options.name,
     rarity: toDo,
     type: damageTypeLookup[+abilityData.exercise_type],
-    target: toDo,
+    target: describeTarget(
+      options.target_range,
+      options.target_segment,
+      options.active_target_method,
+    ),
     formula: toDo,
     multiplier: toDo,
     element: toDo,
-    time: toDo,
+    time: msecToSec(options.cast_time),
     effects: toDo,
-    counter: toDo,
+    counter: toBool(options.counter_enable),
     autoTarget: toDo,
-    sb: toDo,
+    sb: +options.ss_point,
     uses: toDo,
     max: toDo,
     orbs: toDo,
