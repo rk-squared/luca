@@ -1,9 +1,13 @@
 {
   "name": "luca",
   "version": "0.0.1",
+  "description": "Data mining utilities for Final Fantasy Record Keeper",
   "main": "index.js",
   "author": "Josh Kelley <joshkel@gmail.com>",
   "license": "UNLICENSED",
+  "scripts": {
+    "lint": "tslint --project ."
+  },
   "devDependencies": {
     "@types/fs-extra": "^5.0.4",
     "@types/lodash": "^4.14.118",

@@ -1,5 +1,8 @@
+dist/
 node_modules/
 yarn-error.log
+
+.idea/workspace.xml
 
 captures
 tmp/

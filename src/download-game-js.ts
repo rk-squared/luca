@@ -15,7 +15,7 @@ const beautify = require('js-beautify').js;
 
 // tslint:disable no-console
 
-const workPath = path.join(__dirname, 'tmp');
+const workPath = path.join(__dirname, '..', 'tmp');
 fs.ensureDirSync(workPath);
 
 const libJsUrl = 'https://ffrk.static.denagames.com/dff/static/ww/compile/en/js/lib.js';
@@ -40,6 +40,7 @@ function unpackJs(rawJs: string) {
 }
 
 async function downloadAndProcess(url: string) {
+  console.log(`Processing ${path.basename(url)}...`);
   const localFilename = path.join(workPath, path.basename(url));
   const response = await axios.get(url);
   const rawJs = response.data;

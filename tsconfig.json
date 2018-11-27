@@ -28,14 +28,8 @@
 
     "outDir": "dist"
   },
-  "files": [
-    "app/index.tsx"
-  ],
   "include": [
-    "app/**/*.ts",
-    "app/**/*.tsx",
-    "test/**/*.ts",
-    "test/**/*.tsx",
+    "src/**/*.ts",
     "node_modules/@types/**/*.d.ts"
   ],
   "exclude": [

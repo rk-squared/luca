@@ -9,7 +9,7 @@ const safeEval = require('safe-eval');
 
 // tslint:disable no-console max-classes-per-file
 
-const workPath = path.join(__dirname, 'tmp');
+const workPath = path.join(__dirname, '..', 'tmp');
 fs.ensureDirSync(workPath);
 
 class Module {
@@ -85,6 +85,7 @@ class ModuleSet {
 }
 
 const underscore = require('underscore');
+// noinspection JSUnusedGlobalSymbols
 const gameModules = new ModuleSet([
   new Module('underscore', underscore),
   new Module('util', {
@@ -102,6 +103,7 @@ const gameModules = new ModuleSet([
   }),
 ]);
 
+// noinspection JSUnusedGlobalSymbols
 const FF: any = {
   ns: {
     battle: {
@@ -116,6 +118,7 @@ const FF: any = {
   extra: {}
 };
 
+// noinspection JSUnusedGlobalSymbols
 const gameContext = {
   define() {
     const args = Array.prototype.slice.call(arguments);
@@ -129,7 +132,7 @@ const gameContext = {
     gameModules.add(new Module(moduleName, prereqs, definition));
   },
 
-  require(prereqs: string[], module: () => void) {
+  require(prereqs: string[] /*, module: () => void*/) {
     console.log(`require: ${prereqs.join(', ')}`);
   },
 
@@ -151,8 +154,8 @@ function main() {
 
   FF.extra.statusAilments = {};
   _.forEach(FF.ns.battle.Conf.STATUS_AILMENTS_TYPE, (value, key) => {
-    FF.extra.statusAilments[key] = {
-      id: +value,
+    FF.extra.statusAilments[value] = {
+      _name: key,
       ...FF.ns.battle.StatusAilmentsConfig.getParam(value)
     };
   });
