@@ -22,14 +22,13 @@ export enum DamageType {
   BLK = 4,
   BLU = 5,
   SUM = 6,
-  NAT = 7,  // aka "Inborn"
+  NAT = 7, // aka "Inborn"
   NIN = 8,
   NONE = 9,
 }
 
 export const attackId = conf.ABILITY_ID_OF.ATTACK;
-export const schoolTypeLookup = _.fromPairs(_.map(
-  conf.ABILITY_CATEGORY_ID,
-  (value, key) => [value, _.startCase(_.toLower(key))]
-));
+export const schoolTypeLookup = _.fromPairs(
+  _.map(conf.ABILITY_CATEGORY_ID, (value, key) => [value, _.startCase(_.toLower(key))]),
+);
 export const damageTypeLookup = makeLookup(DamageType);

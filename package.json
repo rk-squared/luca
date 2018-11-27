@@ -16,11 +16,17 @@
     "fs-extra": "^7.0.1",
     "js-beautify": "^1.8.8",
     "lodash": "^4.17.11",
+    "prettier": "^1.15.2",
     "quicktype": "^15.0.155",
     "safe-eval": "^0.4.1",
     "ts-node": "^7.0.1",
     "tslint": "^5.11.0",
     "typescript": "^3.1.6",
     "underscore": "^1.9.1"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "trailingComma": "all",
+    "singleQuote": true
   }
 }

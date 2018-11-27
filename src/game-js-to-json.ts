@@ -100,7 +100,7 @@ const gameModules = new ModuleSet([
       };
       _.extend(newClass.prototype, props);
       return newClass;
-    }
+    },
   }),
 ]);
 
@@ -108,15 +108,15 @@ const gameModules = new ModuleSet([
 const FF: any = {
   ns: {
     battle: {
-      util: {}
-    }
+      util: {},
+    },
   },
   env: {
-    isWWRegion: () => true,   // I have no idea what this means.
+    isWWRegion: () => true, // I have no idea what this means.
   },
 
   // Locally calculated
-  extra: {}
+  extra: {},
 };
 
 // noinspection JSUnusedGlobalSymbols
@@ -124,7 +124,7 @@ const gameContext = {
   define() {
     const args = Array.prototype.slice.call(arguments);
 
-    const moduleName = typeof(args[0]) === 'string' ? args.shift() : null;
+    const moduleName = typeof args[0] === 'string' ? args.shift() : null;
     const prereqs = Array.isArray(args[0]) ? args.shift() : [];
     const definition: () => any = args.shift();
 
@@ -138,7 +138,7 @@ const gameContext = {
   },
 
   FF,
-  _: underscore
+  _: underscore,
 };
 
 function main() {
@@ -157,7 +157,7 @@ function main() {
   _.forEach(FF.ns.battle.Conf.STATUS_AILMENTS_TYPE, (value, key) => {
     FF.extra.statusAilments[value] = {
       _name: key,
-      ...FF.ns.battle.StatusAilmentsConfig.getParam(value)
+      ...FF.ns.battle.StatusAilmentsConfig.getParam(value),
     };
   });
 

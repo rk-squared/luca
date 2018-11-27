@@ -86,14 +86,14 @@ function convertAbility(abilityData: any): any {
   // @ts-ignore
   const args = getArgs(options);
 
-  const toDo = null;  // TODO: Resolve these
+  const toDo = null; // TODO: Resolve these
 
   if (options.alias_name !== '' && options.alias_name !== options.name) {
     throw new Error(`Received unexpected alias ${options.alias_name} for ${options.name}`);
   }
 
   if (+abilityData.ability_id === attackId && options.name === 'Attack') {
-   return null;
+    return null;
   }
 
   const school = schoolTypeLookup[+abilityData.category_id] || null;
