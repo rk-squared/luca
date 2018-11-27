@@ -12,6 +12,11 @@ export interface NamedArgs {
   forceHit?: number;
   isSameTarget?: number;
   healHpFactor?: number;
+  barterRate?: number;
+  selfStatusAilments?: number;
+  selfSaOptionsDuration?: number;
+  ignoresAttackHit?: number;
+  selfSaAnimationFlag?: number;
   elements?: number[];
 }
 
@@ -36,7 +41,7 @@ function formatEnlirAttack(options: Options, args: NamedArgs): string {
   const multiplier = toEuroFixed((args.damageFactor || 0) / 100);
 
   let desc;
-  if (args.barrageNum === 1) {
+  if (!args.barrageNum || args.barrageNum === 1) {
     desc = `${count} ${who} ${range}attack (${multiplier})`;
   } else {
     desc = `${count} ${who} ${range}attacks (${multiplier} each)`;
@@ -65,6 +70,29 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
         formatEnlirAttack(options, args) +
         `, heals the user for ${args.healHpFactor}% of the damage dealt`
       );
+    },
+  },
+  PhysicalAttackMultiAndHpBarterAndSelfSaAction: {
+    formula: 'Physical',
+    args: {
+      damageFactor: 1,
+      barterRate: 2,
+      atkType: 4,
+      forceHit: 5,
+      barrageNum: 6,
+      isSameTarget: 7,
+      selfStatusAilments: 9,
+      selfSaOptionsDuration: 10,
+      ignoresAttackHit: 11,
+      selfSaAnimationFlag: 12,
+    },
+    formatEnlir(options: Options, args: NamedArgs): string {
+      let result = formatEnlirAttack(options, args);
+      if (args.barterRate) {
+        result += `, damages the user for ${args.barterRate / 10}% max HP`;
+      }
+      // TODO: Implement status ailments
+      return result;
     },
   },
 };
@@ -152,8 +180,8 @@ export function getNamedArgs(actionId: number, options: Options): NamedArgs | nu
 }
 
 export function getMultiplier(args: NamedArgs | null): number | null {
-  if (args && args.barrageNum && args.damageFactor) {
-    return (args.barrageNum * args.damageFactor) / 100;
+  if (args && args.barrageNum != null && args.damageFactor) {
+    return ((args.barrageNum || 1) * args.damageFactor) / 100;
   } else {
     return null;
   }
