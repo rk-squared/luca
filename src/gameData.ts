@@ -2,7 +2,7 @@ import * as _ from 'lodash';
 
 export const battleData = require('./battle.json');
 
-const conf = battleData.ns.battle.Conf;
+export const conf = battleData.ns.battle.Conf;
 
 function makeLookup<T extends string>(enumType: any) {
   const result: { [s: string]: T } = {};
@@ -26,8 +26,24 @@ export enum DamageType {
   NIN = 8,
   NONE = 9,
 }
+export const damageTypeLookup = makeLookup(DamageType);
+
+export enum ElementType {
+  Fire = 100,
+  Ice = 101,
+  Lightning = 102,
+  Earth = 103,
+  Wind = 104,
+  Water = 105,
+  Holy = 106,
+  Dark = 107,
+  Poison = 108,
+  NE = 199,
+}
+export const elementTypeLookup = makeLookup(ElementType);
 
 export const attackId = conf.ABILITY_ID_OF.ATTACK;
+export const isAprilFoolId = (id: number) => id === conf.ABILITY_ID_OF.SKETCH_FOR_APRIL_FOOL_2017;
 
 const schoolAlias: { [key: string]: string } = {
   SHOOTER: 'Sharpshooter',
@@ -39,11 +55,9 @@ export const schoolTypeLookup = _.fromPairs(
   ]),
 );
 
-export const damageTypeLookup = makeLookup(DamageType);
-
-const targetRangeLookup = _.invert(conf.TARGET_RANGE);
-const targetSegmentLookup = _.invert(conf.TARGET_SEGMENT);
-const activeTargetMethodLookup = _.invert(conf.ACTIVE_TARGET_METHOD);
+export const targetRangeLookup = _.invert(conf.TARGET_RANGE);
+export const targetSegmentLookup = _.invert(conf.TARGET_SEGMENT);
+export const activeTargetMethodLookup = _.invert(conf.ACTIVE_TARGET_METHOD);
 const targetLookup: { [range: string]: { [segment: string]: string } } = {
   SINGLE: {
     OPPONENT: 'Single enemy',

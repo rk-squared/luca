@@ -2,8 +2,20 @@
 
 import * as fs from 'fs-extra';
 
-import { getNamedArgs } from './battleActions';
-import { attackId, damageTypeLookup, describeTarget, schoolTypeLookup } from './gameData';
+import {
+  getAbilityDescription,
+  getBattleActionDetails,
+  getElements,
+  getMultiplier,
+  getNamedArgs,
+} from './battleActions';
+import {
+  attackId,
+  damageTypeLookup,
+  describeTarget,
+  isAprilFoolId,
+  schoolTypeLookup,
+} from './gameData';
 
 // tslint:disable no-console
 
@@ -79,8 +91,13 @@ function convertAbility(abilityData: any): any {
   if (+abilityData.ability_id === attackId && options.name === 'Attack') {
     return null;
   }
+  if (isAprilFoolId(+abilityData.ability_id)) {
+    return null;
+  }
 
   const school = schoolTypeLookup[+abilityData.category_id] || null;
+  const details = getBattleActionDetails(abilityData.action_id);
+  const args = getNamedArgs(+abilityData.action_id, options);
 
   // Not yet used:
   // const breaksDamageCap = toBool(options.max_damage_threshold_type);
@@ -98,11 +115,11 @@ function convertAbility(abilityData: any): any {
       options.target_segment,
       options.active_target_method,
     ),
-    formula: toDo,
-    multiplier: toDo,
-    element: toDo,
+    formula: details ? details.formula : null,
+    multiplier: getMultiplier(args),
+    element: getElements(args),
     time: msecToSec(options.cast_time),
-    effects: toDo,
+    effects: getAbilityDescription(+abilityData.action_id, options, args),
     counter: toBool(options.counter_enable),
     autoTarget: toDo,
     sb: +options.ss_point,
