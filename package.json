@@ -6,29 +6,61 @@
   "author": "Josh Kelley <joshkel@gmail.com>",
   "license": "UNLICENSED",
   "scripts": {
-    "lint": "tslint --project ."
+    "lint": "tslint --project .",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "jest": {
+    "roots": [
+      "<rootDir>/src"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js"
+    ],
+    "moduleDirectories": [
+      "node_modules"
+    ],
+    "transform": {
+      "^.+\\.(ts|tsx)$": "ts-jest"
+    },
+    "testMatch": [
+      "**/?(*.)(spec|test).ts?(x)"
+    ],
+    "collectCoverage": true,
+    "collectCoverageFrom": [
+      "<rootDir>/app/**/*.{ts,tsx}",
+      "!**/__tests__/**"
+    ],
+    "coverageReporters": [
+      "html"
+    ]
+  },
+  "prettier": {
+    "printWidth": 100,
+    "trailingComma": "all",
+    "singleQuote": true
   },
   "devDependencies": {
     "@types/fs-extra": "^5.0.4",
+    "@types/jest": "^23.3.9",
     "@types/lodash": "^4.14.118",
     "@types/node": "^10.12.10",
     "@types/number-to-words": "^1.2.0",
     "axios": "^0.18.0",
     "fs-extra": "^7.0.1",
+    "jest": "^23.6.0",
     "js-beautify": "^1.8.8",
     "lodash": "^4.17.11",
     "number-to-words": "^1.2.4",
     "prettier": "^1.15.2",
     "quicktype": "^15.0.155",
     "safe-eval": "^0.4.1",
+    "ts-jest": "^23.10.5",
     "ts-node": "^7.0.1",
     "tslint": "^5.11.0",
     "typescript": "^3.1.6",
     "underscore": "^1.9.1"
-  },
-  "prettier": {
-    "printWidth": 100,
-    "trailingComma": "all",
-    "singleQuote": true
   }
 }

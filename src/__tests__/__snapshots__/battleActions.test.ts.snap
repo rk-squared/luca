@@ -1,0 +1,37 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`battleActions convertAbility converts simple character abilities 1`] = `
+Object {
+  "args": Object {
+    "atkType": 1,
+    "barrageNum": 4,
+    "damageFactor": 75,
+    "elements": Array [
+      107,
+    ],
+    "forceHit": 0,
+    "healHpFactor": 20,
+    "isSameTarget": 1,
+  },
+  "autoTarget": null,
+  "counter": true,
+  "effects": "Four single attacks (0,75 each), heals the user for 20% of the damage dealt",
+  "element": "Dark",
+  "formula": "Physical",
+  "gl": true,
+  "id": 30271101,
+  "introducingEvent": null,
+  "max": null,
+  "multiplier": 3,
+  "name": "Dread Weapon",
+  "nameJp": null,
+  "orbs": null,
+  "rarity": null,
+  "sb": 75,
+  "school": "Darkness",
+  "target": "Single enemy",
+  "time": 1.65,
+  "type": "PHY",
+  "uses": null,
+}
+`;
