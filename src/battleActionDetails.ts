@@ -2,8 +2,10 @@ import * as converter from 'number-to-words';
 
 import { conf, targetRangeLookup } from './gameData';
 import { Options } from './schemas/get_battle_init_data';
+import { toEuroFixed } from './util';
 
 import * as _ from 'lodash';
+import { describeStatusAilment } from './statusAilments';
 
 export interface NamedArgs {
   damageFactor?: number;
@@ -13,11 +15,26 @@ export interface NamedArgs {
   isSameTarget?: number;
   healHpFactor?: number;
   barterRate?: number;
-  selfStatusAilments?: number;
   selfSaOptionsDuration?: number;
   ignoresAttackHit?: number;
-  selfSaAnimationFlag?: number;
   elements?: number[];
+  critical?: number;
+
+  /**
+   * A status ailment ID or status ailment bundle ID (see
+   * StatusAilmentsConfig.getBundle) for a status applied to self.
+   */
+  selfSaBundle?: number;
+
+  /**
+   * A single status ailment ID for a status applied to self.
+   */
+  selfSaId?: number;
+
+  /**
+   * Aka hasSelfSaAnimation.
+   */
+  selfSaAnimationFlag?: number;
 }
 
 interface BattleActionDetails {
@@ -30,8 +47,6 @@ interface BattleActionDetails {
 
   formatEnlir: (options: Options, args: NamedArgs) => string;
 }
-
-const toEuroFixed = (value: number) => value.toFixed(2).replace('.', ',');
 
 function formatEnlirAttack(options: Options, args: NamedArgs): string {
   const target = targetRangeLookup[options.target_range];
@@ -50,8 +65,20 @@ function formatEnlirAttack(options: Options, args: NamedArgs): string {
   if (args.forceHit) {
     desc += ', 100% hit rate';
   }
+  if (args.critical) {
+    desc += `, ${args.critical}% additional critical chance`;
+  }
 
   return desc;
+}
+
+function formatSelfStatus(args: NamedArgs): string {
+  const status = describeStatusAilment(args.selfSaId as number);
+  if (!status) {
+    return 'grants unknown status to the user';
+  } else {
+    return (status.isBuff ? 'grants' : 'causes') + ` ${status.description} to the user`;
+  }
 }
 
 export const battleActionDetails: { [actionName: string]: BattleActionDetails } = {
@@ -81,7 +108,7 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
       forceHit: 5,
       barrageNum: 6,
       isSameTarget: 7,
-      selfStatusAilments: 9,
+      selfSaBundle: 9,
       selfSaOptionsDuration: 10,
       ignoresAttackHit: 11,
       selfSaAnimationFlag: 12,
@@ -92,6 +119,27 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
         result += `, damages the user for ${args.barterRate / 10}% max HP`;
       }
       // TODO: Implement status ailments
+      return result;
+    },
+  },
+  PhysicalAttackMultiAndSelfSaAction: {
+    formula: 'Physical',
+    args: {
+      // TODO: setDamageCalculateParamAdjustConf(12, [13, 14])
+      damageFactor: 1,
+      barrageNum: 2,
+      atkType: 3,
+      forceHit: 4,
+      isSameTarget: 6,
+      selfSaId: 7,
+      ignoresAttackHit: 8,
+      selfSaOptionsDuration: 9,
+      selfSaAnimationFlag: 10,
+      critical: 17,
+    },
+    formatEnlir(options: Options, args: NamedArgs): string {
+      let result = formatEnlirAttack(options, args);
+      result += ', ' + formatSelfStatus(args);
       return result;
     },
   },

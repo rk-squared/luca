@@ -1,3 +1,4 @@
+import { battleActionDetails, NamedArgs } from './battleActionDetails';
 import {
   attackId,
   battleData,
@@ -10,7 +11,6 @@ import {
 import { BuddyAbility, Options } from './schemas/get_battle_init_data';
 
 import * as _ from 'lodash';
-import { battleActionDetails, NamedArgs } from './battleActionDetails';
 
 interface ActionMapItem {
   actionId: number;
