@@ -1,5 +1,15 @@
-import { battleData, conf, elementTypeLookup, targetRangeLookup } from './gameData';
-import { Options } from './schemas/get_battle_init_data';
+import {
+  attackId,
+  battleData,
+  conf,
+  damageTypeLookup,
+  describeTarget,
+  elementTypeLookup,
+  isAprilFoolId,
+  schoolTypeLookup,
+  targetRangeLookup,
+} from './gameData';
+import { BuddyAbility, Options } from './schemas/get_battle_init_data';
 
 import * as converter from 'number-to-words';
 
@@ -206,4 +216,63 @@ export function getAbilityDescription(
   } else {
     return null;
   }
+}
+
+const toBool = (value: string | number) => !!+value;
+const toBoolOrNull = (value: string | number | undefined) => (value == null ? null : toBool(value));
+const msecToSec = (msec: string | number) => +msec / 1000;
+
+export function convertAbility(abilityData: BuddyAbility): any {
+  const { options } = abilityData;
+
+  const toDo = null; // TODO: Resolve these
+
+  if (options.alias_name !== '' && options.alias_name !== options.name) {
+    throw new Error(`Received unexpected alias ${options.alias_name} for ${options.name}`);
+  }
+
+  if (+abilityData.ability_id === attackId && options.name === 'Attack') {
+    return null;
+  }
+  if (isAprilFoolId(+abilityData.ability_id)) {
+    return null;
+  }
+
+  const school = schoolTypeLookup[+abilityData.category_id] || null;
+  const details = getBattleActionDetails(+abilityData.action_id);
+  const args = getNamedArgs(+abilityData.action_id, options);
+
+  // Not yet used:
+  // const breaksDamageCap = toBool(options.max_damage_threshold_type);
+
+  // Omit options.target_death; it corresponds to TARGET_DEATH, but abilities'
+  // effects make it obvious whether they can target dead allies.
+
+  return {
+    school,
+    name: options.name,
+    rarity: toDo,
+    type: damageTypeLookup[+abilityData.exercise_type],
+    target: describeTarget(
+      options.target_range,
+      options.target_segment,
+      options.active_target_method,
+    ),
+    formula: details ? details.formula : null,
+    multiplier: getMultiplier(args),
+    element: getElements(args),
+    time: msecToSec(options.cast_time),
+    effects: getAbilityDescription(+abilityData.action_id, options, args),
+    counter: toBoolOrNull(options.counter_enable),
+    autoTarget: toDo,
+    sb: options.ss_point == null ? null : +options.ss_point,
+    uses: toDo,
+    max: toDo,
+    orbs: toDo,
+    introducingEvent: toDo,
+    nameJp: toDo,
+    id: +abilityData.ability_id,
+    gl: true,
+    args: getNamedArgs(+abilityData.action_id, options),
+  };
 }

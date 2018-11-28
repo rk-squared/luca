@@ -77,7 +77,7 @@ const targetLookup: { [range: string]: { [segment: string]: string } } = {
 export function describeTarget(
   rangeValue: string | number,
   segmentValue: string | number,
-  activeTargetMethodValue: string | number,
+  activeTargetMethodValue: string | number | undefined,
 ): string | null {
   const range = targetRangeLookup[rangeValue];
   const segment = targetSegmentLookup[segmentValue];
@@ -86,6 +86,7 @@ export function describeTarget(
   } else if (
     range === 'SINGLE' &&
     segment === 'OPPONENT' &&
+    activeTargetMethodValue != null &&
     activeTargetMethodLookup[activeTargetMethodValue] === 'BOTH_DISABLE'
   ) {
     return 'Random enemies';
