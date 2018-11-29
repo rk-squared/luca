@@ -5,7 +5,7 @@ import { Options } from './schemas/get_battle_init_data';
 import { toEuroFixed } from './util';
 
 import * as _ from 'lodash';
-import { describeStatusAilment } from './statusAilments';
+import { describeStatusAilment, describeStatusAilmentBundle } from './statusAilments';
 
 export interface NamedArgs {
   damageFactor?: number;
@@ -29,6 +29,11 @@ export interface NamedArgs {
   burstAbility?: number[];
 
   /**
+   * Healing factor.
+   */
+  factor?: number;
+
+  /**
    * If true, then each hit is done against the same target.
    */
   isSameTarget?: number;
@@ -48,6 +53,11 @@ export interface NamedArgs {
    * Also called hasSelfSaAnimation.
    */
   selfSaAnimationFlag?: number;
+
+  setSaId?: number[];
+  setSaBundle?: number[];
+  unsetSaId?: number[];
+  unsetSaBundle?: number[];
 }
 
 interface BattleActionDetails {
@@ -85,6 +95,15 @@ function formatEnlirAttack(options: Options, args: NamedArgs): string {
   return desc;
 }
 
+function formatEnlirHeal(options: Options, args: NamedArgs): string {
+  let result = 'Restores HP';
+  if (args.factor) {
+    result += ` (${args.factor})`;
+  }
+  result += ', damages undeads';
+  return result;
+}
+
 function formatSelfStatus(args: NamedArgs): string {
   const status = describeStatusAilment(args.selfSaId as number);
   if (!status) {
@@ -94,7 +113,39 @@ function formatSelfStatus(args: NamedArgs): string {
   }
 }
 
+function formatStatuses(statusAilmentIds?: number[], bundleIds?: number[]): string {
+  return _.filter(
+    _.flatten([
+      (statusAilmentIds || []).map(i => _.get(describeStatusAilment(i), 'description')),
+      (bundleIds || []).map(i => _.get(describeStatusAilmentBundle(i), 'description')),
+    ]),
+  ).join(', ');
+}
+
 export const battleActionDetails: { [actionName: string]: BattleActionDetails } = {
+  HealHpAction: {
+    formula: 'Magical',
+    args: {
+      factor: 1,
+      matkElement: 2,
+      damageFactor: 3,
+    },
+    formatEnlir: formatEnlirHeal,
+  },
+  HealHpAndHealSaAction: {
+    formula: 'Magical',
+    args: {
+      factor: 1,
+      matkElement: 2,
+      damageFactor: 3,
+    },
+    formatEnlir(options: Options, args: NamedArgs): string {
+      return (
+        formatEnlirHeal(options, args) +
+        `, removes ${formatStatuses(args.unsetSaId, args.unsetSaBundle)}`
+      );
+    },
+  },
   MagicAttackMultiAction: {
     formula: 'Magical',
     args: {

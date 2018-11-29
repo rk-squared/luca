@@ -27,6 +27,11 @@ interface StatusAilmentDescription {
   description: string;
 }
 
+interface StatusAilmentBundleDescription {
+  description: string;
+  statusAilmentIds: number[];
+}
+
 interface StatusAilmentHandler {
   [functionName: string]: (status: StatusAilment) => StatusAilmentDescription | null;
 }
@@ -47,6 +52,11 @@ const setterHandlers: StatusAilmentHandler = {
   }),
 };
 
+// noinspection SpellCheckingInspection
+const statusAilmentBundleAliases: { [key: string]: string } = {
+  ESNA: 'negative effects',
+};
+
 export function describeStatusAilment(statusAilmentId: number): StatusAilmentDescription | null {
   const status = battleData.extra.statusAilments[statusAilmentId];
   if (!status) {
@@ -56,4 +66,17 @@ export function describeStatusAilment(statusAilmentId: number): StatusAilmentDes
     return setterHandlers[status.funcMap.set](status);
   }
   return null;
+}
+
+export function describeStatusAilmentBundle(
+  bundleId: number,
+): StatusAilmentBundleDescription | null {
+  const bundle = battleData.extra.statusAilmentBundles[bundleId];
+  if (!bundle) {
+    return null;
+  }
+  return {
+    description: statusAilmentBundleAliases[bundle._name] || bundle._name,
+    statusAilmentIds: bundle.ids,
+  };
 }

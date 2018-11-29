@@ -95,27 +95,31 @@ export function getNamedArgs(actionId: number, options: Options): NamedArgs | nu
   );
 
   // Map arguments that are specified in FFRK actionMap options.
-  if (action.elements && action.elements.args.length) {
-    result.elements = _.filter(action.elements.args.map(i => args[i]));
+  function tryArg(key: keyof NamedArgs, argNumber: number | undefined) {
+    if (argNumber) {
+      result[key] = args[argNumber];
+    }
   }
-  if (action.ignoresReflectionArg) {
-    result.ignoresReflection = args[action.ignoresReflectionArg];
+  function tryArgList(key: keyof NamedArgs, argNumbers: number[] | undefined) {
+    if (argNumbers && argNumbers.length) {
+      result[key] = _.filter(argNumbers.map(i => args[i]));
+    }
   }
-  if (action.ignoresMirageAndMightyGuardArg) {
-    result.ignoresMirageAndMightyGuard = args[action.ignoresMirageAndMightyGuardArg];
-  }
-  if (action.ignoresStatusAilmentsBarrierArg) {
-    result.ignoresStatusAilmentsBarrier = args[action.ignoresStatusAilmentsBarrierArg];
-  }
-  if (action.burstAbilityArgs && action.burstAbilityArgs.length) {
-    result.burstAbility = _.filter(action.burstAbilityArgs.map(i => args[i]));
-  }
+  tryArgList('elements', action.elements && action.elements.args);
+  tryArg('ignoresReflection', action.ignoresReflectionArg);
+  tryArg('ignoresMirageAndMightyGuard', action.ignoresMirageAndMightyGuardArg);
+  tryArg('ignoresStatusAilmentsBarrier', action.ignoresStatusAilmentsBarrierArg);
+  tryArgList('burstAbility', action.burstAbilityArgs);
+  tryArgList('setSaId', action.setSa && action.setSa.args);
+  tryArgList('setSaBundle', action.setSa && action.setSa.bundleArgs);
+  tryArgList('unsetSaId', action.unsetSa && action.unsetSa.args);
+  tryArgList('unsetSaBundle', action.unsetSa && action.unsetSa.bundleArgs);
 
   return result;
 }
 
 export function getMultiplier(args: NamedArgs | null): number | null {
-  if (args && args.barrageNum != null && args.damageFactor) {
+  if (args && args.damageFactor) {
     return ((args.barrageNum || 1) * args.damageFactor) / 100;
   } else {
     return null;

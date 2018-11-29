@@ -141,6 +141,28 @@ const gameContext = {
   _: underscore,
 };
 
+function getAllStatusAilments() {
+  const result: any = {};
+  _.forEach(FF.ns.battle.Conf.STATUS_AILMENTS_TYPE, (value, key) => {
+    result[value] = {
+      _name: key,
+      ...FF.ns.battle.StatusAilmentsConfig.getParam(value),
+    };
+  });
+  return result;
+}
+
+function getAllStatusAilmentBundles() {
+  const result: any = {};
+  _.forEach(FF.ns.battle.Conf.STATUS_AILMENTS_BUNDLE, (value, key) => {
+    result[value] = {
+      _name: key,
+      ids: FF.ns.battle.StatusAilmentsConfig.getBundle(value),
+    };
+  });
+  return result;
+}
+
 function main() {
   const battleJs = fs.readFileSync(path.join(workPath, 'battle.js')).toString();
   safeEval(battleJs, gameContext);
@@ -153,13 +175,8 @@ function main() {
   gameModules.get('scenes/battle/StatusAilmentsConfig');
   // console.log(FF.ns.battle.StatusAilmentsConfig);
 
-  FF.extra.statusAilments = {};
-  _.forEach(FF.ns.battle.Conf.STATUS_AILMENTS_TYPE, (value, key) => {
-    FF.extra.statusAilments[value] = {
-      _name: key,
-      ...FF.ns.battle.StatusAilmentsConfig.getParam(value),
-    };
-  });
+  FF.extra.statusAilments = getAllStatusAilments();
+  FF.extra.statusAilmentBundles = getAllStatusAilmentBundles();
 
   fs.writeFileSync(path.join(srcPath, 'battle.json'), JSON.stringify(FF, null, 2));
 }
