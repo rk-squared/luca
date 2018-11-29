@@ -87,10 +87,30 @@ export function getNamedArgs(actionId: number, options: Options): NamedArgs | nu
   }
 
   const args = getArgs(options);
-  const result = _.fromPairs(_.map(details.args, (value, key) => [key, args[value as number]]));
+
+  // Map arguments that are specified in FFRK JS code and that we manually
+  // define in our own TS code to match.
+  const result: NamedArgs = _.fromPairs(
+    _.map(details.args, (value, key) => [key, args[value as number]]),
+  );
+
+  // Map arguments that are specified in FFRK actionMap options.
   if (action.elements && action.elements.args.length) {
     result.elements = _.filter(action.elements.args.map(i => args[i]));
   }
+  if (action.ignoresReflectionArg) {
+    result.ignoresReflection = args[action.ignoresReflectionArg];
+  }
+  if (action.ignoresMirageAndMightyGuardArg) {
+    result.ignoresMirageAndMightyGuard = args[action.ignoresMirageAndMightyGuardArg];
+  }
+  if (action.ignoresStatusAilmentsBarrierArg) {
+    result.ignoresStatusAilmentsBarrier = args[action.ignoresStatusAilmentsBarrierArg];
+  }
+  if (action.burstAbilityArgs && action.burstAbilityArgs.length) {
+    result.burstAbility = _.filter(action.burstAbilityArgs.map(i => args[i]));
+  }
+
   return result;
 }
 
@@ -103,8 +123,12 @@ export function getMultiplier(args: NamedArgs | null): number | null {
 }
 
 export function getElements(args: NamedArgs | null): string | null {
-  if (args && args.elements && args.elements.length) {
+  if (!args) {
+    return null;
+  } else if (args.elements && args.elements.length) {
     return args.elements.map(i => elementTypeLookup[i]).join(', ');
+  } else if (args.matkElement) {
+    return elementTypeLookup[args.matkElement];
   } else {
     return null;
   }

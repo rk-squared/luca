@@ -12,13 +12,26 @@ export interface NamedArgs {
   barrageNum?: number;
   atkType?: number;
   forceHit?: number;
-  isSameTarget?: number;
   healHpFactor?: number;
   barterRate?: number;
   selfSaOptionsDuration?: number;
   ignoresAttackHit?: number;
   elements?: number[];
   critical?: number;
+  matkElement?: number;
+  minDamageFactor?: number;
+  situationalRecalculateDamageHookType?: number;
+  damageCalculateTypeByAbility?: number;
+  matkExponentialFactor?: number;
+  ignoresReflection?: number;
+  ignoresMirageAndMightyGuard?: number;
+  ignoresStatusAilmentsBarrier?: number;
+  burstAbility?: number[];
+
+  /**
+   * If true, then each hit is done against the same target.
+   */
+  isSameTarget?: number;
 
   /**
    * A status ailment ID or status ailment bundle ID (see
@@ -32,7 +45,7 @@ export interface NamedArgs {
   selfSaId?: number;
 
   /**
-   * Aka hasSelfSaAnimation.
+   * Also called hasSelfSaAnimation.
    */
   selfSaAnimationFlag?: number;
 }
@@ -82,6 +95,21 @@ function formatSelfStatus(args: NamedArgs): string {
 }
 
 export const battleActionDetails: { [actionName: string]: BattleActionDetails } = {
+  MagicAttackMultiAction: {
+    formula: 'Magical',
+    args: {
+      // TODO: setDamageCalculateParamAdjustConf(8, [9, 10, 11, 12])
+      damageFactor: 1,
+      matkElement: 2,
+      minDamageFactor: 3, // TODO: implement
+      barrageNum: 4,
+      isSameTarget: 5,
+      situationalRecalculateDamageHookType: 7, // TODO: implement
+      damageCalculateTypeByAbility: 13, // TODO: implement
+      matkExponentialFactor: 14, // TODO: implement
+    },
+    formatEnlir: formatEnlirAttack,
+  },
   PhysicalAttackMultiAndHealHpByHitDamageAction: {
     formula: 'Physical',
     args: {
