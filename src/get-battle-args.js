@@ -17,6 +17,7 @@
  */
 
 const babylon = require('babylon');
+const _ = require('lodash');
 const path = require('path');
 
 function logDebug(message) {
@@ -83,6 +84,63 @@ const getBooleanValue = {
 };
 const getBooleanValueArgument = node => getValueArgument(node.argument.argument);
 
+// jscodeshift match expression for
+// `this.helper.set("someValue", ...)`
+const helperSetValue = {
+  type: 'CallExpression',
+  callee: {
+    type: 'MemberExpression',
+    object: {
+      type: 'MemberExpression',
+      object: {
+        type: 'ThisExpression',
+      },
+      property: {
+        type: 'Identifier',
+        name: 'helper',
+      },
+    },
+    property: {
+      type: 'Identifier',
+    },
+  },
+};
+function helperSetValueSetter(node) {
+  const setterName = node.callee.property.name;
+  if (setterName.startsWith('set')) {
+    return _.lowerFirst(setterName.substring(3));
+  } else {
+    return null;
+  }
+}
+
+function getArgSource(j, argNode) {
+  if (j.match(argNode, getValue)) {
+    return getValueArgument(argNode);
+  } else if (j.match(argNode, getBooleanValue)) {
+    return getBooleanValueArgument(argNode);
+  } else {
+    return null;
+  }
+}
+
+function getArgSourceNumber(j, argNode) {
+  let argSource = getArgSource(j, argNode);
+  if (argSource) {
+    logDebug('    ' + argSource);
+    const match = argSource.match(/^arg(\d+)$/);
+    if (match) {
+      return +match[1];
+    }
+  }
+  return null;
+}
+
+function getMultiArgSourceNumber(j, arrayNode) {
+  const result = _.filter(arrayNode.elements.map(i => getArgSourceNumber(j, i)));
+  return result.length ? result : null;
+}
+
 module.exports = function(fileInfo, api) {
   const j = api.jscodeshift;
 
@@ -106,9 +164,15 @@ module.exports = function(fileInfo, api) {
       }
       logDebug(moduleName);
       const actionName = path.basename(moduleName);
-      args[actionName] = args[actionName] || {};
+      args[actionName] = args[actionName] || {
+        args: {},
+        multiArgs: {},
+      };
 
-      j(defineNode.arguments[2])
+      const moduleDefinition = defineNode.arguments[2];
+
+      // Process simple setters.
+      j(moduleDefinition)
         .find(j.CallExpression, setValue)
         .forEach(setPath => {
           const setNode = setPath.node;
@@ -119,17 +183,40 @@ module.exports = function(fileInfo, api) {
           const namedArg = setNode.arguments[0].value;
           logDebug('  ' + namedArg);
 
-          let argSource;
-          if (j.match(setNode.arguments[1], getValue)) {
-            argSource = getValueArgument(setNode.arguments[1]);
-          } else if (j.match(setNode.arguments[1], getBooleanValue)) {
-            argSource = getBooleanValueArgument(setNode.arguments[1]);
+          const argSourceNumber = getArgSourceNumber(j, setNode.arguments[1]);
+          if (argSourceNumber != null) {
+            args[actionName].args[namedArg] = argSourceNumber;
           }
-          if (argSource) {
-            logDebug('    ' + argSource);
-            const match = argSource.match(/^arg(\d+)$/);
-            if (match) {
-              args[actionName][namedArg] = +match[1];
+        });
+
+      // Process custom setters.
+      j(moduleDefinition)
+        .find(j.CallExpression, helperSetValue)
+        .forEach(setPath => {
+          const setNode = setPath.node;
+          const namedArg = helperSetValueSetter(setNode);
+          if (!namedArg) {
+            return;
+          }
+          logDebug('  ' + namedArg);
+          if (setNode.arguments.length === 1) {
+            const argSourceNumber = getArgSourceNumber(j, setNode.arguments[0]);
+            if (argSourceNumber) {
+              args[actionName].args[namedArg] = argSourceNumber;
+            }
+          } else if (
+            setNode.arguments.length === 2 &&
+            namedArg === 'damageCalculateParamAdjustConf' &&
+            setNode.arguments[1].type === 'ArrayExpression'
+          ) {
+            const argSourceNumber = getArgSourceNumber(j, setNode.arguments[0]);
+            if (argSourceNumber != null) {
+              args[actionName].args['damageCalculateParamAdjust'] = argSourceNumber;
+            }
+
+            const multiArgSourceNumber = getMultiArgSourceNumber(j, setNode.arguments[1]);
+            if (multiArgSourceNumber != null) {
+              args[actionName].multiArgs['damageCalculateParamAdjustConf'] = multiArgSourceNumber;
             }
           }
         });

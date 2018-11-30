@@ -58,6 +58,9 @@ export interface NamedArgs {
   setSaBundle?: number[];
   unsetSaId?: number[];
   unsetSaBundle?: number[];
+
+  damageCalculateParamAdjust?: number;
+  damageCalculateParamAdjustConf?: number[];
 }
 
 interface BattleActionDetails {
@@ -67,6 +70,8 @@ interface BattleActionDetails {
    * Map from args1..args30 to named arguments.
    */
   args: { [key in keyof NamedArgs]: number };
+
+  multiArgs?: { [key in keyof NamedArgs]: number[] };
 
   formatEnlir: (options: Options, args: NamedArgs) => string;
 }
