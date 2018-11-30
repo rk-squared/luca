@@ -8,6 +8,7 @@ import {
   isAprilFoolId,
   schoolTypeLookup,
 } from './gameData';
+import { logger } from './logger';
 import { BuddyAbility, Options } from './schemas/get_battle_init_data';
 
 import * as _ from 'lodash';
@@ -48,6 +49,14 @@ export const actionLookup: { [i: number]: ActionMapItem } = _.fromPairs(
   battleData.ns.battle.AbilityFactory.actionMap.map((i: any) => [i.actionId, i]),
 ) as any;
 
+function logMissing(actionId: number) {
+  if (!actionLookup[actionId]) {
+    logger.warn(`Unknown action ID ${actionId}`);
+  } else {
+    logger.warn(`Missing details for action ID ${actionId} (${actionLookup[actionId].className})`);
+  }
+}
+
 function getArgs(options: Options): number[] {
   const result = [];
   for (let i = 1; i <= 30; i++) {
@@ -83,6 +92,7 @@ export function getNamedArgs(actionId: number, options: Options): NamedArgs | nu
   const action = actionLookup[actionId];
   const details = getBattleActionDetails(actionId);
   if (!action || !details) {
+    logMissing(actionId);
     return null;
   }
 
