@@ -21,6 +21,10 @@ src/game-js-to-json.ts
 # Create a symlink to data captures from RK Squared for easier processing.
 ln -s ~/Library/Application\ Support/RK\ Squared/captures/
 
+# Get argument mappings from tmp/battle.js.  These aren't directly usable,
+# but they can help with further processing.
+src/get-battle-args.js tmp/battle.js  > tmp/battle-args.json
+
 # Process data.  For example:
 src/get-battle-init-abilities.ts $(ls captures/*get_battle_init_data.json | tail -n 1)
 ```
