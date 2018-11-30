@@ -124,7 +124,10 @@ function getArgSource(j, argNode) {
   }
 }
 
-function getArgSourceNumber(j, argNode) {
+function getArgSourceNumber(j, argNode, localVariables) {
+  if (argNode.type === 'Identifier' && localVariables && localVariables[argNode.name]) {
+    return localVariables[argNode.name];
+  }
   let argSource = getArgSource(j, argNode);
   if (argSource) {
     logDebug('    ' + argSource);
@@ -136,8 +139,8 @@ function getArgSourceNumber(j, argNode) {
   return null;
 }
 
-function getMultiArgSourceNumber(j, arrayNode) {
-  const result = _.filter(arrayNode.elements.map(i => getArgSourceNumber(j, i)));
+function getMultiArgSourceNumber(j, arrayNode, localVariables) {
+  const result = _.filter(arrayNode.elements.map(i => getArgSourceNumber(j, i, localVariables)));
   return result.length ? result : null;
 }
 
@@ -171,6 +174,25 @@ module.exports = function(fileInfo, api) {
 
       const moduleDefinition = defineNode.arguments[2];
 
+      // Process local variables.  We cheat: instead of honoring JS scoping,
+      // we grab any variables that look appropriate, with preference to early
+      // variables, and hope it works.
+      const localVariables = {};
+      j(moduleDefinition)
+        .find(j.VariableDeclarator, {
+          id: {
+            type: 'Identifier',
+          },
+          init: getValue,
+        })
+        .forEach(variablePath => {
+          const variableNode = variablePath.node;
+          const argSourceNumber = getArgSourceNumber(j, variableNode.init, localVariables);
+          if (argSourceNumber != null) {
+            localVariables[variableNode.id.name] = argSourceNumber;
+          }
+        });
+
       // Process simple setters.
       j(moduleDefinition)
         .find(j.CallExpression, setValue)
@@ -183,7 +205,7 @@ module.exports = function(fileInfo, api) {
           const namedArg = setNode.arguments[0].value;
           logDebug('  ' + namedArg);
 
-          const argSourceNumber = getArgSourceNumber(j, setNode.arguments[1]);
+          const argSourceNumber = getArgSourceNumber(j, setNode.arguments[1], localVariables);
           if (argSourceNumber != null) {
             args[actionName].args[namedArg] = argSourceNumber;
           }
@@ -200,7 +222,7 @@ module.exports = function(fileInfo, api) {
           }
           logDebug('  ' + namedArg);
           if (setNode.arguments.length === 1) {
-            const argSourceNumber = getArgSourceNumber(j, setNode.arguments[0]);
+            const argSourceNumber = getArgSourceNumber(j, setNode.arguments[0], localVariables);
             if (argSourceNumber) {
               args[actionName].args[namedArg] = argSourceNumber;
             }
@@ -209,12 +231,16 @@ module.exports = function(fileInfo, api) {
             namedArg === 'damageCalculateParamAdjustConf' &&
             setNode.arguments[1].type === 'ArrayExpression'
           ) {
-            const argSourceNumber = getArgSourceNumber(j, setNode.arguments[0]);
+            const argSourceNumber = getArgSourceNumber(j, setNode.arguments[0], localVariables);
             if (argSourceNumber != null) {
               args[actionName].args['damageCalculateParamAdjust'] = argSourceNumber;
             }
 
-            const multiArgSourceNumber = getMultiArgSourceNumber(j, setNode.arguments[1]);
+            const multiArgSourceNumber = getMultiArgSourceNumber(
+              j,
+              setNode.arguments[1],
+              localVariables,
+            );
             if (multiArgSourceNumber != null) {
               args[actionName].multiArgs['damageCalculateParamAdjustConf'] = multiArgSourceNumber;
             }
