@@ -9,7 +9,12 @@ import {
   schoolTypeLookup,
 } from './gameData';
 import { logger } from './logger';
-import { BuddyAbility, Options } from './schemas/get_battle_init_data';
+import {
+  BeastActiveSkill,
+  BuddyAbility,
+  BuddySoulStrike,
+  Options,
+} from './schemas/get_battle_init_data';
 
 import * as _ from 'lodash';
 
@@ -165,13 +170,16 @@ const toBool = (value: string | number) => !!+value;
 const toBoolOrNull = (value: string | number | undefined) => (value == null ? null : toBool(value));
 const msecToSec = (msec: string | number) => +msec / 1000;
 
-export function convertAbility(abilityData: BuddyAbility): any {
+export function convertAbility(
+  abilityData: BuddyAbility | BuddySoulStrike | BeastActiveSkill,
+): any {
   const { options } = abilityData;
 
   const toDo = null; // TODO: Resolve these
 
+  let alias = null;
   if (options.alias_name !== '' && options.alias_name !== options.name) {
-    throw new Error(`Received unexpected alias ${options.alias_name} for ${options.name}`);
+    alias = options.alias_name;
   }
 
   if (+abilityData.ability_id === attackId && options.name === 'Attack') {
@@ -181,7 +189,9 @@ export function convertAbility(abilityData: BuddyAbility): any {
     return null;
   }
 
-  const school = schoolTypeLookup[+abilityData.category_id] || null;
+  const school = abilityData.category_id
+    ? schoolTypeLookup[+abilityData.category_id] || null
+    : null;
   const details = getBattleActionDetails(+abilityData.action_id);
   const args = getNamedArgs(+abilityData.action_id, options);
 
@@ -194,6 +204,7 @@ export function convertAbility(abilityData: BuddyAbility): any {
   return {
     school,
     name: options.name,
+    alias,
     rarity: toDo,
     type: damageTypeLookup[+abilityData.exercise_type],
     target: describeTarget(

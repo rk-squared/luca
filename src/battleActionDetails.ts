@@ -6,6 +6,7 @@ import { toEuroFixed } from './util';
 
 import * as _ from 'lodash';
 import { describeStatusAilment, describeStatusAilmentBundle } from './statusAilments';
+import { logger } from './logger';
 
 export interface NamedArgs {
   damageFactor?: number;
@@ -110,8 +111,10 @@ function formatEnlirHeal(options: Options, args: NamedArgs): string {
 }
 
 function formatSelfStatus(args: NamedArgs): string {
-  const status = describeStatusAilment(args.selfSaId as number);
+  const statusId = args.selfSaId as number;
+  const status = describeStatusAilment(statusId);
   if (!status) {
+    logger.warn(`Unknown status ID ${statusId}`);
     return 'grants unknown status to the user';
   } else {
     return (status.isBuff ? 'grants' : 'causes') + ` ${status.description} to the user`;
