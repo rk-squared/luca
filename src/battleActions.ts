@@ -1,4 +1,4 @@
-import { battleActionDetails, NamedArgs } from './battleActionDetails';
+import { BattleActionDetails, battleActionDetails, NamedArgs } from './battleActionDetails';
 import {
   attackId,
   battleData,
@@ -80,22 +80,21 @@ function getArgs(options: Options): number[] {
   return result;
 }
 
-export function getBattleActionDetails(actionId: number) {
-  if (!actionLookup[actionId]) {
-    return null;
-  }
+export function getBattleActionDetails(
+  actionId: number,
+): [ActionMapItem | null, BattleActionDetails | null] {
   const action = actionLookup[actionId];
+  if (!action) {
+    return [null, null];
+  }
 
   const actionName = action.className;
-  if (!battleActionDetails[actionName]) {
-    return null;
-  }
-  return battleActionDetails[actionName];
+  const details = battleActionDetails[actionName];
+  return [action, details || null];
 }
 
 export function getNamedArgs(actionId: number, options: Options): NamedArgs | null {
-  const action = actionLookup[actionId];
-  const details = getBattleActionDetails(actionId);
+  const [action, details] = getBattleActionDetails(actionId);
   if (!action || !details) {
     logMissing(actionId);
     return null;
@@ -158,7 +157,7 @@ export function getAbilityDescription(
   options: Options,
   args: NamedArgs | null,
 ): string | null {
-  const details = getBattleActionDetails(actionId);
+  const [, details] = getBattleActionDetails(actionId);
   if (details && args) {
     return details.formatEnlir(options, args);
   } else {
@@ -192,7 +191,7 @@ export function convertAbility(
   const school = abilityData.category_id
     ? schoolTypeLookup[+abilityData.category_id] || null
     : null;
-  const details = getBattleActionDetails(+abilityData.action_id);
+  const [action, details] = getBattleActionDetails(+abilityData.action_id);
   const args = getNamedArgs(+abilityData.action_id, options);
 
   // Not yet used:
@@ -203,8 +202,8 @@ export function convertAbility(
 
   return {
     school,
-    name: options.name,
-    alias,
+    name: options.name.trim(),
+    alias: alias ? alias.trim() : alias,
     rarity: toDo,
     type: damageTypeLookup[+abilityData.exercise_type],
     target: describeTarget(
@@ -227,6 +226,7 @@ export function convertAbility(
     nameJp: toDo,
     id: +abilityData.ability_id,
     gl: true,
+    action: action ? action.className : null,
     args: getNamedArgs(+abilityData.action_id, options),
   };
 }

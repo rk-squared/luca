@@ -1,12 +1,12 @@
 import * as converter from 'number-to-words';
 
 import { conf, targetRangeLookup } from './gameData';
+import { logger } from './logger';
 import { Options } from './schemas/get_battle_init_data';
+import { describeStatusAilment, describeStatusAilmentBundle } from './statusAilments';
 import { toEuroFixed } from './util';
 
 import * as _ from 'lodash';
-import { describeStatusAilment, describeStatusAilmentBundle } from './statusAilments';
-import { logger } from './logger';
 
 export interface NamedArgs {
   damageFactor?: number;
@@ -64,7 +64,7 @@ export interface NamedArgs {
   damageCalculateParamAdjustConf?: number[];
 }
 
-interface BattleActionDetails {
+export interface BattleActionDetails {
   formula?: 'Physical' | 'Magical' | 'Hybrid';
 
   /**
@@ -96,6 +96,19 @@ function formatEnlirAttack(options: Options, args: NamedArgs): string {
   }
   if (args.critical) {
     desc += `, ${args.critical}% additional critical chance`;
+  }
+
+  if (options.status_ailments_id && options.status_ailments_id !== '0') {
+    const statusId = +options.status_ailments_id;
+    const status = describeStatusAilment(statusId);
+    let statusName: string;
+    if (!status) {
+      logger.warn(`Unknown status ID ${statusId}`);
+      statusName = `unknown status ${statusId}`;
+    } else {
+      statusName = status.description;
+    }
+    desc += `, causes ${statusName} (${options.status_ailments_factor}%)`;
   }
 
   return desc;
@@ -157,15 +170,18 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
   MagicAttackMultiAction: {
     formula: 'Magical',
     args: {
-      // TODO: setDamageCalculateParamAdjustConf(8, [9, 10, 11, 12])
       damageFactor: 1,
       matkElement: 2,
       minDamageFactor: 3, // TODO: implement
       barrageNum: 4,
       isSameTarget: 5,
       situationalRecalculateDamageHookType: 7, // TODO: implement
+      damageCalculateParamAdjust: 8, // TODO: implement
       damageCalculateTypeByAbility: 13, // TODO: implement
       matkExponentialFactor: 14, // TODO: implement
+    },
+    multiArgs: {
+      damageCalculateParamAdjustConf: [9, 10, 11, 12],
     },
     formatEnlir: formatEnlirAttack,
   },
