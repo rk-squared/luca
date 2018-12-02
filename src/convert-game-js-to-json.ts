@@ -3,12 +3,15 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
 
-import * as _ from 'lodash';
 import { logger } from './logger';
+import { LangType } from './util';
+
+import * as _ from 'lodash';
 
 const safeEval = require('safe-eval');
+const underscore = require('underscore');
 
-// tslint:disable no-console max-classes-per-file
+// tslint:disable max-classes-per-file
 
 const srcPath = __dirname;
 const workPath = path.join(__dirname, '..', 'tmp');
@@ -41,7 +44,7 @@ class Module {
     try {
       this.value = this.definition.apply(undefined, prereqs);
     } catch (e) {
-      console.error(`Error while resolving ${this.name}: ${e}`);
+      logger.error(`Error while resolving ${this.name}: ${e}`);
       throw e;
     }
     this.isInitialized = true;
@@ -86,12 +89,21 @@ class ModuleSet {
   }
 }
 
-const underscore = require('underscore');
 // noinspection JSUnusedGlobalSymbols
 const gameModules = new ModuleSet([
   new Module('underscore', underscore),
   new Module('util', {
     cloneDeep: _.cloneDeep,
+    forceArray(value: any) {
+      // noinspection JSDeprecatedSymbols
+      if (underscore.isUndefined(value) || underscore.isNull(value)) {
+        return [];
+      } else if (underscore.isArray(value)) {
+        return value;
+      } else {
+        return [value];
+      }
+    },
   }),
   new Module('lib/ClassBase', {
     extend(props: any) {
@@ -164,8 +176,9 @@ function getAllStatusAilmentBundles() {
   return result;
 }
 
-function convertBattleJs(lang: string) {
-  const battleJs = fs.readFileSync(path.join(workPath, `${lang}-battle.js`)).toString();
+function convertBattleJs(lang: LangType) {
+  logger.info(`Processing battle info for ${lang.toUpperCase()}...`);
+  const battleJs = fs.readFileSync(path.join(workPath, lang, `battle.js`)).toString();
   safeEval(battleJs, gameContext);
 
   // console.log(gameModules.get('scenes/battle/Conf'));
@@ -179,11 +192,12 @@ function convertBattleJs(lang: string) {
   FF.extra.statusAilments = getAllStatusAilments();
   FF.extra.statusAilmentBundles = getAllStatusAilmentBundles();
 
-  fs.writeFileSync(path.join(srcPath, `${lang}-battle.json`), JSON.stringify(FF, null, 2));
+  fs.ensureDirSync(path.join(srcPath, lang));
+  fs.writeFileSync(path.join(srcPath, lang, 'battle.json'), JSON.stringify(FF, null, 2));
 }
 
 if (require.main === module) {
-  for (const lang of ['gl', 'jp']) {
-    convertBattleJs(lang);
+  for (const lang of _.values(LangType)) {
+    convertBattleJs(lang as LangType);
   }
 }

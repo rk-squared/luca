@@ -18,6 +18,8 @@ import * as _ from 'lodash';
 const safeEval = require('safe-eval');
 const beautify = require('js-beautify').js;
 
+// tslint:disable no-console
+
 const workPath = path.join(__dirname, '..', 'tmp');
 fs.ensureDirSync(workPath);
 
@@ -57,7 +59,7 @@ function unpackJs(rawJs: string) {
 
 async function downloadAndProcess(url: string, lang: LangType) {
   const localBaseFilename = path.basename(url);
-  logger.info(`Processing ${lang} ${localBaseFilename}...`);
+  logger.info(`Processing ${lang.toUpperCase()} ${localBaseFilename}...`);
 
   const localDirectory = path.join(workPath, lang);
   fs.ensureDirSync(localDirectory);
@@ -82,5 +84,5 @@ async function downloadAndProcessAll() {
 }
 
 if (require.main === module) {
-  downloadAndProcessAll().catch(e => logger.error(e));
+  downloadAndProcessAll().catch(e => console.error(e));
 }

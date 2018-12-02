@@ -14,9 +14,9 @@ yarn
 # processes them up to make them legible.
 src/download-game-js.ts
 
-# Process game files.  This creates src/battle.json, which you can use for
-# futher processing.
-src/game-js-to-json.ts
+# Process game files.  This creates battle.json under src/gl and src/jp, which
+# you can use for # futher processing.
+src/convert-game-js-to-json.ts
 
 # Create a symlink to data captures from RK Squared for easier processing.
 ln -s ~/Library/Application\ Support/RK\ Squared/captures/

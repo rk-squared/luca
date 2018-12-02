@@ -3,7 +3,8 @@ dist/
 node_modules/
 yarn-error.log
 
-src/battle.json
+src/gl/
+src/jp/
 
 .idea/workspace.xml
 
