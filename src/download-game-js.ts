@@ -10,16 +10,32 @@ import axios from 'axios';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 
+import { logger } from './logger';
+import { LangType } from './util';
+
+import * as _ from 'lodash';
+
 const safeEval = require('safe-eval');
 const beautify = require('js-beautify').js;
-
-// tslint:disable no-console
 
 const workPath = path.join(__dirname, '..', 'tmp');
 fs.ensureDirSync(workPath);
 
-const libJsUrl = 'https://ffrk.static.denagames.com/dff/static/ww/compile/en/js/lib.js';
-const battleJsUrl = 'https://ffrk.static.denagames.com/dff/static/ww/compile/en/js/battle.js';
+const baseUrl: { [lang in LangType]: string } = {
+  [LangType.Gl]: 'https://ffrk.static.denagames.com/dff/static/ww/compile/en/',
+  [LangType.Jp]: 'https://dff.sp.mbga.jp/dff/static/',
+};
+const jsFiles = [
+  // Recommended by the FFRK Reddit wiki, although I haven't yet needed it.
+  'js/lib.js',
+
+  // The main file we're interested in.
+  'js/battle.js',
+
+  // Loaded at game start.  Includes the 'util' module, which some battle.js
+  // code depends on.
+  'js/pre.js',
+];
 
 /**
  * Unpacks any eval-based JavaScript, using the safe-eval module.  See
@@ -39,9 +55,14 @@ function unpackJs(rawJs: string) {
   return safeEval(rawJs.substring(prefix.length, rawJs.length - suffix.length));
 }
 
-async function downloadAndProcess(url: string) {
-  console.log(`Processing ${path.basename(url)}...`);
-  const localFilename = path.join(workPath, path.basename(url));
+async function downloadAndProcess(url: string, lang: LangType) {
+  const localBaseFilename = path.basename(url);
+  logger.info(`Processing ${lang} ${localBaseFilename}...`);
+
+  const localDirectory = path.join(workPath, lang);
+  fs.ensureDirSync(localDirectory);
+  const localFilename = path.join(localDirectory, localBaseFilename);
+
   const response = await axios.get(url);
   const rawJs = response.data;
   const unpackedJs = unpackJs(rawJs);
@@ -49,9 +70,17 @@ async function downloadAndProcess(url: string) {
   fs.writeFileSync(localFilename, prettyJs);
 }
 
-async function main() {
-  await downloadAndProcess(libJsUrl);
-  await downloadAndProcess(battleJsUrl);
+async function downloadAndProcessAll() {
+  return Promise.all(
+    _.map(baseUrl, async (url, key) => {
+      const lang = key as LangType;
+      for (const file of jsFiles) {
+        await downloadAndProcess(url + file, lang);
+      }
+    }),
+  );
 }
 
-main().catch(e => console.error(e));
+if (require.main === module) {
+  downloadAndProcessAll().catch(e => logger.error(e));
+}

@@ -4,6 +4,7 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 
 import * as _ from 'lodash';
+import { logger } from './logger';
 
 const safeEval = require('safe-eval');
 
@@ -128,13 +129,13 @@ const gameContext = {
     const prereqs = Array.isArray(args[0]) ? args.shift() : [];
     const definition: () => any = args.shift();
 
-    console.log(`define ${moduleName}: ${prereqs.join(', ')}`);
+    logger.debug(`Processing ${moduleName} definition: ${prereqs.join(', ')}`);
 
     gameModules.add(new Module(moduleName, prereqs, definition));
   },
 
   require(prereqs: string[] /*, module: () => void*/) {
-    console.log(`require: ${prereqs.join(', ')}`);
+    logger.debug(`Processing requires: ${prereqs.join(', ')}`);
   },
 
   FF,
@@ -163,8 +164,8 @@ function getAllStatusAilmentBundles() {
   return result;
 }
 
-function main() {
-  const battleJs = fs.readFileSync(path.join(workPath, 'battle.js')).toString();
+function convertBattleJs(lang: string) {
+  const battleJs = fs.readFileSync(path.join(workPath, `${lang}-battle.js`)).toString();
   safeEval(battleJs, gameContext);
 
   // console.log(gameModules.get('scenes/battle/Conf'));
@@ -178,7 +179,11 @@ function main() {
   FF.extra.statusAilments = getAllStatusAilments();
   FF.extra.statusAilmentBundles = getAllStatusAilmentBundles();
 
-  fs.writeFileSync(path.join(srcPath, 'battle.json'), JSON.stringify(FF, null, 2));
+  fs.writeFileSync(path.join(srcPath, `${lang}-battle.json`), JSON.stringify(FF, null, 2));
 }
 
-main();
+if (require.main === module) {
+  for (const lang of ['gl', 'jp']) {
+    convertBattleJs(lang);
+  }
+}

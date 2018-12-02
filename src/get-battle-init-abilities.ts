@@ -1,6 +1,7 @@
 #!/usr/bin/env npx ts-node
 
 import * as fs from 'fs-extra';
+const stripBom = require('strip-bom');
 
 import { convertAbility } from './battleActions';
 import { GetBattleInitData } from './schemas/get_battle_init_data';
@@ -9,8 +10,13 @@ import { GetBattleInitData } from './schemas/get_battle_init_data';
 
 function main(fileNames: string[]) {
   for (const i of fileNames) {
-    const captured = JSON.parse(fs.readFileSync(i).toString());
-    const { battle } = captured.data as GetBattleInitData;
+    const captured = JSON.parse(stripBom(fs.readFileSync(i).toString()));
+
+    // Handle both RK Squared captures (which include metadata, with the reply
+    // as a `data` property) and direct captures.
+    const battleData = (captured.data || captured) as GetBattleInitData;
+
+    const { battle } = battleData;
 
     for (const character of [...battle.buddy, ...battle.supporter]) {
       for (const abilityData of character.abilities) {
