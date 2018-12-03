@@ -1,4 +1,4 @@
-#!/usr/bin/env npx jscodeshift --run-in-band --dry --silent --transform
+#!/usr/bin/env npx jscodeshift --run-in-band --dry --transform
 /**
  * @file
  * jscodeshift module for processing FFRK's battle.js and extracting named
@@ -17,8 +17,11 @@
  */
 
 const babylon = require('babylon');
+const fs = require('fs-extra');
 const _ = require('lodash');
 const path = require('path');
+
+const srcPath = path.join(__dirname, '..', 'src');
 
 function logDebug(message) {
   process.stderr.write(message + '\n');
@@ -144,7 +147,7 @@ function getMultiArgSourceNumber(j, arrayNode, localVariables) {
   return result.length ? result : null;
 }
 
-module.exports = function(fileInfo, api) {
+module.exports = function(fileInfo, api, options) {
   const j = api.jscodeshift;
 
   const args = {};
@@ -248,13 +251,19 @@ module.exports = function(fileInfo, api) {
         });
     });
 
-  console.log(JSON.stringify(args, null, 2));
+  const argsText = JSON.stringify(args, null, 2);
+  if (options.lang) {
+    fs.writeFileSync(path.join(srcPath, options.lang, 'battleArgs.json'), argsText);
+  } else {
+    console.log(argsText);
+  }
 
   return result.toSource();
 };
 
 // Override the default Babylon parser so that we can pass strictMode: false.
 // (FFRK uses the `with` statement.)
+// noinspection JSUnusedGlobalSymbols
 module.exports.parser = {
   parse(source) {
     return babylon.parse(source, { strictMode: false });

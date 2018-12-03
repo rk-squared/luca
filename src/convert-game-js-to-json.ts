@@ -13,7 +13,7 @@ const underscore = require('underscore');
 
 // tslint:disable max-classes-per-file
 
-const srcPath = __dirname;
+const srcPath = path.join(__dirname, '..', 'src');
 const workPath = path.join(__dirname, '..', 'tmp');
 fs.ensureDirSync(workPath);
 
