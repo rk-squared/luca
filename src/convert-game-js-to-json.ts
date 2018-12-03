@@ -54,9 +54,9 @@ class Module {
     return prereqs.map(i => {
       const isRelative = i.startsWith('./') || i.startsWith('../');
       if (isRelative) {
-        i = path.dirname(this.name) + '/' + i;
+        i = path.posix.dirname(this.name) + '/' + i;
       }
-      return path.normalize(i);
+      return path.posix.normalize(i);
     });
   }
 }
