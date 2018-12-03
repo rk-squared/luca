@@ -1,5 +1,6 @@
 import * as _ from 'lodash';
 import { LangType } from './util';
+import { NamedArgs } from './battleActionDetails';
 
 /**
  * Limited definition of battle.json, which we process from battle.js then add
@@ -133,10 +134,36 @@ function makeBattleDataHelpers(lang: LangType) {
   return result;
 }
 
+/**
+ * Battle action details as automatically processed from battle.js by
+ * get-battle-args.js.  Properly belongs in battleActionDetails.js, but putting
+ * it here lets us keep all of our JSON data grouped together.
+ */
+export interface BattleActionArgs {
+  /**
+   * Map from args1..args30 to named arguments.
+   */
+  args: { [key in keyof NamedArgs]: number };
+
+  multiArgs?: { [key in keyof NamedArgs]: number[] };
+}
+
+// FIXME: This isn't type-checked properly - TypeScript lets me pass a BattleData in place of an ActionMap
 type BattleDataHelpers = ReturnType<typeof makeBattleDataHelpers>;
-export type BattleData = BattleDataType & BattleDataHelpers;
+export type BattleData = BattleDataType &
+  BattleDataHelpers & {
+    battleActionArgs: { [actionName: string]: BattleActionArgs };
+  };
 
 export const battleData: { [lang in LangType]: BattleData } = {
-  [LangType.Gl]: { ...rawBattleData[LangType.Gl], ...makeBattleDataHelpers(LangType.Gl) },
-  [LangType.Jp]: { ...rawBattleData[LangType.Jp], ...makeBattleDataHelpers(LangType.Jp) },
+  [LangType.Gl]: {
+    ...rawBattleData[LangType.Gl],
+    ...makeBattleDataHelpers(LangType.Gl),
+    battleActionArgs: require('./gl/battleArgs.json'),
+  },
+  [LangType.Jp]: {
+    ...rawBattleData[LangType.Jp],
+    ...makeBattleDataHelpers(LangType.Jp),
+    battleActionArgs: require('./jp/battleArgs.json'),
+  },
 };

@@ -1,10 +1,10 @@
 import * as converter from 'number-to-words';
 
-import { BattleData } from './gameData';
+import { BattleActionArgs, BattleData } from './gameData';
 import { logger } from './logger';
 import { Options } from './schemas/get_battle_init_data';
 import { describeStatusAilment, describeStatusAilmentBundle } from './statusAilments';
-import { toEuroFixed } from './util';
+import { LangType, toEuroFixed } from './util';
 
 import * as _ from 'lodash';
 
@@ -64,15 +64,8 @@ export interface NamedArgs {
   damageCalculateParamAdjustConf?: number[];
 }
 
-export interface BattleActionDetails {
+export interface BattleActionDetails extends BattleActionArgs {
   formula?: 'Physical' | 'Magical' | 'Hybrid';
-
-  /**
-   * Map from args1..args30 to named arguments.
-   */
-  args: { [key in keyof NamedArgs]: number };
-
-  multiArgs?: { [key in keyof NamedArgs]: number[] };
 
   formatEnlir: (battleData: BattleData, options: Options, args: NamedArgs) => string;
 }
@@ -146,6 +139,13 @@ function formatStatuses(
     ]),
   ).join(', ');
 }
+
+export const battleActionArgs: {
+  [lang in LangType]: { [actionName: string]: BattleActionArgs }
+} = {
+  [LangType.Gl]: require('./gl/battleArgs.json'),
+  [LangType.Jp]: require('./jp/battleArgs.json'),
+};
 
 export const battleActionDetails: { [actionName: string]: BattleActionDetails } = {
   HealHpAction: {

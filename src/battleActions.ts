@@ -1,5 +1,5 @@
 import { BattleActionDetails, battleActionDetails, NamedArgs } from './battleActionDetails';
-import { BattleData } from './gameData';
+import { BattleActionArgs, BattleData } from './gameData';
 import { logger } from './logger';
 import {
   BeastActiveSkill,
@@ -78,18 +78,29 @@ function getArgs(options: Options): number[] {
   return result;
 }
 
+/**
+ * Gets details about battle actions for the given action ID.
+ *
+ * Returns the following:
+ * - The action name, if known
+ * - The action argument mappings, as automatically extracted from battle.js
+ * - The manually maintained action details, including argument mappings,
+ *   formatters, etc.
+ */
 export function getBattleActionDetails(
+  battleData: BattleData,
   actionLookup: ActionLookup,
   actionId: number,
-): [ActionMapItem | null, BattleActionDetails | null] {
+): [ActionMapItem | null, BattleActionArgs | null, BattleActionDetails | null] {
   const action = actionLookup[actionId];
   if (!action) {
-    return [null, null];
+    return [null, null, null];
   }
 
   const actionName = action.className;
+  const args = battleData.battleActionArgs[actionName];
   const details = battleActionDetails[actionName];
-  return [action, details || null];
+  return [action, args || null, details || null];
 }
 
 /**
@@ -98,23 +109,34 @@ export function getBattleActionDetails(
  * names, courtesy of battle.js actions).
  */
 export function getNamedArgs(
+  battleData: BattleData,
   actionLookup: ActionLookup,
   actionId: number,
   options: Options,
 ): NamedArgs | null {
-  const [action, details] = getBattleActionDetails(actionLookup, actionId);
-  if (!action || !details) {
+  const [action, actionArgs, details] = getBattleActionDetails(battleData, actionLookup, actionId);
+  if (!action || !actionArgs || !details) {
     logMissing(actionLookup, actionId);
+  }
+  if (!action || !actionArgs) {
     return null;
   }
+  const argSource = details || actionArgs;
 
   const args = getArgs(options);
 
   // Map arguments that are specified in FFRK JS code and that we manually
   // define in our own TS code to match.
-  const result: NamedArgs = _.fromPairs(
-    _.map(details.args, (value, key) => [key, args[value as number]]),
-  );
+  // FIXME: This is ugly.  Refactor and unit test.
+  const result: NamedArgs = {
+    ..._.fromPairs(_.map(argSource.args, (value, key) => [key, args[value as number]])),
+    ..._.fromPairs(
+      _.map(argSource.multiArgs, (value, key) => [
+        key,
+        _.filter((value as number[]).map((i: number) => args[i])),
+      ]),
+    ),
+  };
 
   // Map arguments that are specified in FFRK actionMap options.
   function tryArg(key: keyof NamedArgs, argNumber: number | undefined) {
@@ -167,7 +189,7 @@ export function getAbilityDescription(
   options: Options,
   args: NamedArgs | null,
 ): string | null {
-  const [, details] = getBattleActionDetails(actionLookup, actionId);
+  const [, , details] = getBattleActionDetails(battleData, actionLookup, actionId);
   if (details && args) {
     return details.formatEnlir(battleData, options, args);
   } else {
@@ -203,8 +225,12 @@ export function convertAbility(
   const school = abilityData.category_id
     ? battleData.schoolTypeLookup[+abilityData.category_id] || null
     : null;
-  const [action, details] = getBattleActionDetails(actionLookup, +abilityData.action_id);
-  const args = getNamedArgs(actionLookup, +abilityData.action_id, options);
+  const [action, , details] = getBattleActionDetails(
+    battleData,
+    actionLookup,
+    +abilityData.action_id,
+  );
+  const args = getNamedArgs(battleData, actionLookup, +abilityData.action_id, options);
 
   // Not yet used:
   // const breaksDamageCap = toBool(options.max_damage_threshold_type);
@@ -239,6 +265,6 @@ export function convertAbility(
     id: +abilityData.ability_id,
     gl: true,
     action: action ? action.className : null,
-    args: getNamedArgs(battleData, +abilityData.action_id, options),
+    args: getNamedArgs(battleData, actionLookup, +abilityData.action_id, options),
   };
 }
