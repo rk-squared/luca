@@ -1,5 +1,5 @@
+import { BattleData } from './gameData';
 import { withPlus } from './util';
-import { battleData } from './gameData';
 
 interface StatusAilment {
   _name: string;
@@ -57,7 +57,10 @@ const statusAilmentBundleAliases: { [key: string]: string } = {
   ESNA: 'negative effects',
 };
 
-export function describeStatusAilment(statusAilmentId: number): StatusAilmentDescription | null {
+export function describeStatusAilment(
+  battleData: BattleData,
+  statusAilmentId: number,
+): StatusAilmentDescription | null {
   const status = battleData.extra.statusAilments[statusAilmentId];
   if (!status) {
     return null;
@@ -69,6 +72,7 @@ export function describeStatusAilment(statusAilmentId: number): StatusAilmentDes
 }
 
 export function describeStatusAilmentBundle(
+  battleData: BattleData,
   bundleId: number,
 ): StatusAilmentBundleDescription | null {
   const bundle = battleData.extra.statusAilmentBundles[bundleId];

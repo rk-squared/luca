@@ -1,6 +1,6 @@
 import * as converter from 'number-to-words';
 
-import { conf, targetRangeLookup } from './gameData';
+import { BattleData } from './gameData';
 import { logger } from './logger';
 import { Options } from './schemas/get_battle_init_data';
 import { describeStatusAilment, describeStatusAilmentBundle } from './statusAilments';
@@ -74,14 +74,14 @@ export interface BattleActionDetails {
 
   multiArgs?: { [key in keyof NamedArgs]: number[] };
 
-  formatEnlir: (options: Options, args: NamedArgs) => string;
+  formatEnlir: (battleData: BattleData, options: Options, args: NamedArgs) => string;
 }
 
-function formatEnlirAttack(options: Options, args: NamedArgs): string {
-  const target = targetRangeLookup[options.target_range];
+function formatEnlirAttack(battleData: BattleData, options: Options, args: NamedArgs): string {
+  const target = battleData.targetRangeLookup[options.target_range];
   const count = _.upperFirst(converter.toWords(args.barrageNum || 0));
   const who = target === 'SELF' || target === 'SINGLE' ? 'single' : 'group';
-  const range = args.atkType === conf.ATK_TYPE.INDIRECT ? 'ranged ' : '';
+  const range = args.atkType === battleData.conf.ATK_TYPE.INDIRECT ? 'ranged ' : '';
   const multiplier = toEuroFixed((args.damageFactor || 0) / 100);
 
   let desc;
@@ -100,7 +100,7 @@ function formatEnlirAttack(options: Options, args: NamedArgs): string {
 
   if (options.status_ailments_id && options.status_ailments_id !== '0') {
     const statusId = +options.status_ailments_id;
-    const status = describeStatusAilment(statusId);
+    const status = describeStatusAilment(battleData, statusId);
     let statusName: string;
     if (!status) {
       logger.warn(`Unknown status ID ${statusId}`);
@@ -114,7 +114,7 @@ function formatEnlirAttack(options: Options, args: NamedArgs): string {
   return desc;
 }
 
-function formatEnlirHeal(options: Options, args: NamedArgs): string {
+function formatEnlirHeal(battleData: BattleData, options: Options, args: NamedArgs): string {
   let result = 'Restores HP';
   if (args.factor) {
     result += ` (${args.factor})`;
@@ -123,9 +123,9 @@ function formatEnlirHeal(options: Options, args: NamedArgs): string {
   return result;
 }
 
-function formatSelfStatus(args: NamedArgs): string {
+function formatSelfStatus(battleData: BattleData, args: NamedArgs): string {
   const statusId = args.selfSaId as number;
-  const status = describeStatusAilment(statusId);
+  const status = describeStatusAilment(battleData, statusId);
   if (!status) {
     logger.warn(`Unknown status ID ${statusId}`);
     return 'grants unknown status to the user';
@@ -134,11 +134,15 @@ function formatSelfStatus(args: NamedArgs): string {
   }
 }
 
-function formatStatuses(statusAilmentIds?: number[], bundleIds?: number[]): string {
+function formatStatuses(
+  battleData: BattleData,
+  statusAilmentIds?: number[],
+  bundleIds?: number[],
+): string {
   return _.filter(
     _.flatten([
-      (statusAilmentIds || []).map(i => _.get(describeStatusAilment(i), 'description')),
-      (bundleIds || []).map(i => _.get(describeStatusAilmentBundle(i), 'description')),
+      (statusAilmentIds || []).map(i => _.get(describeStatusAilment(battleData, i), 'description')),
+      (bundleIds || []).map(i => _.get(describeStatusAilmentBundle(battleData, i), 'description')),
     ]),
   ).join(', ');
 }
@@ -160,10 +164,10 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
       matkElement: 2,
       damageFactor: 3,
     },
-    formatEnlir(options: Options, args: NamedArgs): string {
+    formatEnlir(battleData: BattleData, options: Options, args: NamedArgs): string {
       return (
-        formatEnlirHeal(options, args) +
-        `, removes ${formatStatuses(args.unsetSaId, args.unsetSaBundle)}`
+        formatEnlirHeal(battleData, options, args) +
+        `, removes ${formatStatuses(battleData, args.unsetSaId, args.unsetSaBundle)}`
       );
     },
   },
@@ -195,9 +199,9 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
       isSameTarget: 6,
       healHpFactor: 7,
     },
-    formatEnlir(options: Options, args: NamedArgs): string {
+    formatEnlir(battleData: BattleData, options: Options, args: NamedArgs): string {
       return (
-        formatEnlirAttack(options, args) +
+        formatEnlirAttack(battleData, options, args) +
         `, heals the user for ${args.healHpFactor}% of the damage dealt`
       );
     },
@@ -216,8 +220,8 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
       ignoresAttackHit: 11,
       selfSaAnimationFlag: 12,
     },
-    formatEnlir(options: Options, args: NamedArgs): string {
-      let result = formatEnlirAttack(options, args);
+    formatEnlir(battleData: BattleData, options: Options, args: NamedArgs): string {
+      let result = formatEnlirAttack(battleData, options, args);
       if (args.barterRate) {
         result += `, damages the user for ${args.barterRate / 10}% max HP`;
       }
@@ -240,9 +244,9 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
       selfSaAnimationFlag: 10,
       critical: 17,
     },
-    formatEnlir(options: Options, args: NamedArgs): string {
-      let result = formatEnlirAttack(options, args);
-      result += ', ' + formatSelfStatus(args);
+    formatEnlir(battleData: BattleData, options: Options, args: NamedArgs): string {
+      let result = formatEnlirAttack(battleData, options, args);
+      result += ', ' + formatSelfStatus(battleData, args);
       return result;
     },
   },

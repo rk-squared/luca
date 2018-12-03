@@ -1,9 +1,11 @@
 import { convertAbility } from '../battleActions';
+import { battleData } from '../gameData';
+import { LangType } from '../util';
 
 describe('battleActions', () => {
   describe('convertAbility', () => {
     it('converts simple character abilities', () => {
-      const ability = convertAbility({
+      const ability = convertAbility(battleData[LangType.Gl], {
         category_id: '17',
         options: {
           ability_animation_id: '10267',

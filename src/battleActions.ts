@@ -1,13 +1,5 @@
 import { BattleActionDetails, battleActionDetails, NamedArgs } from './battleActionDetails';
-import {
-  attackId,
-  battleData,
-  damageTypeLookup,
-  describeTarget,
-  elementTypeLookup,
-  isAprilFoolId,
-  schoolTypeLookup,
-} from './gameData';
+import { BattleData } from './gameData';
 import { logger } from './logger';
 import {
   BeastActiveSkill,
@@ -50,11 +42,17 @@ interface ActionMapItem {
   burstAbilityArgs?: number[];
 }
 
-export const actionLookup: { [i: number]: ActionMapItem } = _.fromPairs(
-  battleData.ns.battle.AbilityFactory.actionMap.map((i: any) => [i.actionId, i]),
-) as any;
+interface ActionLookup {
+  [i: number]: ActionMapItem;
+}
 
-function logMissing(actionId: number) {
+export function makeActionLookup(battleData: BattleData): { [i: number]: ActionMapItem } {
+  return _.fromPairs(
+    battleData.ns.battle.AbilityFactory.actionMap.map((i: any) => [i.actionId, i]),
+  ) as any;
+}
+
+function logMissing(actionLookup: ActionLookup, actionId: number) {
   if (!actionLookup[actionId]) {
     logger.warn(`Unknown action ID ${actionId}`);
   } else {
@@ -81,6 +79,7 @@ function getArgs(options: Options): number[] {
 }
 
 export function getBattleActionDetails(
+  actionLookup: ActionLookup,
   actionId: number,
 ): [ActionMapItem | null, BattleActionDetails | null] {
   const action = actionLookup[actionId];
@@ -93,10 +92,19 @@ export function getBattleActionDetails(
   return [action, details || null];
 }
 
-export function getNamedArgs(actionId: number, options: Options): NamedArgs | null {
-  const [action, details] = getBattleActionDetails(actionId);
+/**
+ * Maps from an FFRK options object (with values like arg1, arg2...) to our
+ * NamedArgs (which contains the same values, but with meaningful property
+ * names, courtesy of battle.js actions).
+ */
+export function getNamedArgs(
+  actionLookup: ActionLookup,
+  actionId: number,
+  options: Options,
+): NamedArgs | null {
+  const [action, details] = getBattleActionDetails(actionLookup, actionId);
   if (!action || !details) {
-    logMissing(actionId);
+    logMissing(actionLookup, actionId);
     return null;
   }
 
@@ -140,26 +148,28 @@ export function getMultiplier(args: NamedArgs | null): number | null {
   }
 }
 
-export function getElements(args: NamedArgs | null): string | null {
+export function getElements(battleData: BattleData, args: NamedArgs | null): string | null {
   if (!args) {
     return null;
   } else if (args.elements && args.elements.length) {
-    return args.elements.map(i => elementTypeLookup[i]).join(', ');
+    return args.elements.map(i => battleData.elementTypeLookup[i]).join(', ');
   } else if (args.matkElement) {
-    return elementTypeLookup[args.matkElement];
+    return battleData.elementTypeLookup[args.matkElement];
   } else {
     return null;
   }
 }
 
 export function getAbilityDescription(
+  battleData: BattleData,
+  actionLookup: ActionLookup,
   actionId: number,
   options: Options,
   args: NamedArgs | null,
 ): string | null {
-  const [, details] = getBattleActionDetails(actionId);
+  const [, details] = getBattleActionDetails(actionLookup, actionId);
   if (details && args) {
-    return details.formatEnlir(options, args);
+    return details.formatEnlir(battleData, options, args);
   } else {
     return null;
   }
@@ -170,9 +180,11 @@ const toBoolOrNull = (value: string | number | undefined) => (value == null ? nu
 const msecToSec = (msec: string | number) => +msec / 1000;
 
 export function convertAbility(
+  battleData: BattleData,
   abilityData: BuddyAbility | BuddySoulStrike | BeastActiveSkill,
 ): any {
   const { options } = abilityData;
+  const actionLookup = makeActionLookup(battleData);
 
   const toDo = null; // TODO: Resolve these
 
@@ -181,18 +193,18 @@ export function convertAbility(
     alias = options.alias_name;
   }
 
-  if (+abilityData.ability_id === attackId && options.name === 'Attack') {
+  if (+abilityData.ability_id === battleData.attackId && options.name === 'Attack') {
     return null;
   }
-  if (isAprilFoolId(+abilityData.ability_id)) {
+  if (battleData.isAprilFoolId(+abilityData.ability_id)) {
     return null;
   }
 
   const school = abilityData.category_id
-    ? schoolTypeLookup[+abilityData.category_id] || null
+    ? battleData.schoolTypeLookup[+abilityData.category_id] || null
     : null;
-  const [action, details] = getBattleActionDetails(+abilityData.action_id);
-  const args = getNamedArgs(+abilityData.action_id, options);
+  const [action, details] = getBattleActionDetails(actionLookup, +abilityData.action_id);
+  const args = getNamedArgs(actionLookup, +abilityData.action_id, options);
 
   // Not yet used:
   // const breaksDamageCap = toBool(options.max_damage_threshold_type);
@@ -205,17 +217,17 @@ export function convertAbility(
     name: options.name.trim(),
     alias: alias ? alias.trim() : alias,
     rarity: toDo,
-    type: damageTypeLookup[+abilityData.exercise_type],
-    target: describeTarget(
+    type: battleData.damageTypeLookup[+abilityData.exercise_type],
+    target: battleData.describeTarget(
       options.target_range,
       options.target_segment,
       options.active_target_method,
     ),
     formula: details ? details.formula : null,
     multiplier: getMultiplier(args),
-    element: getElements(args),
+    element: getElements(battleData, args),
     time: msecToSec(options.cast_time),
-    effects: getAbilityDescription(+abilityData.action_id, options, args),
+    effects: getAbilityDescription(battleData, actionLookup, +abilityData.action_id, options, args),
     counter: toBoolOrNull(options.counter_enable),
     autoTarget: toDo,
     sb: options.ss_point == null ? null : +options.ss_point,
@@ -227,6 +239,6 @@ export function convertAbility(
     id: +abilityData.ability_id,
     gl: true,
     action: action ? action.className : null,
-    args: getNamedArgs(+abilityData.action_id, options),
+    args: getNamedArgs(battleData, +abilityData.action_id, options),
   };
 }
