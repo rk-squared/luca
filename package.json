@@ -10,7 +10,11 @@
     "build:watch": "tsc -w",
     "lint": "tslint --project .",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "get-battle-args-gl": "jscodeshift --run-in-band --dry --transform src/get-battle-args.js tmp/gl/battle.js --lang=gl",
+    "get-battle-args-jp": "jscodeshift --run-in-band --dry --transform src/get-battle-args.js tmp/jp/battle.js --lang=jp",
+    "get-battle-args": "npm run get-battle-args-gl && npm run get-battle-args-jp",
+    "copy-json": "copyfiles \"./src/gl/*.json\" \"./src/jp/*.json\" dist --up 1"
   },
   "jest": {
     "roots": [
@@ -53,6 +57,7 @@
     "@types/strip-bom": "^3.0.0",
     "axios": "^0.18.0",
     "babylon": "^6.18.0",
+    "copyfiles": "^2.1.0",
     "fs-extra": "^7.0.1",
     "jest": "^23.6.0",
     "js-beautify": "^1.8.8",
