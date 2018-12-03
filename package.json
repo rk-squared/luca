@@ -6,6 +6,8 @@
   "author": "Josh Kelley <joshkel@gmail.com>",
   "license": "UNLICENSED",
   "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc -w",
     "lint": "tslint --project .",
     "test": "jest",
     "test:watch": "jest --watch"
