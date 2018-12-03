@@ -17,7 +17,7 @@ yarn build
 # processes them up to make them legible.
 node dist/download-game-js.js
 
-# Process constants from battle.js.  This creates battle.json under src/gl and 
+# Process constants from battle.js.  This creates battle.json under src/gl and
 # src/jp, which you can use for # futher processing.
 node dist/convert-game-js-to-json.js
 
@@ -32,5 +32,5 @@ yarn copy-json
 ln -s ~/Library/Application\ Support/RK\ Squared/captures/
 
 # Process data.  For example:
-src/get-battle-init-abilities.js $(ls captures/*get_battle_init_data.json | tail -n 1)
+node dist/get-battle-init-abilities.js $(ls captures/*get_battle_init_data.json | tail -n 1)
 ```
