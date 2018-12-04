@@ -1,6 +1,8 @@
 import * as _ from 'lodash';
-import { LangType } from './util';
+import { sprintf } from 'sprintf-js';
+
 import { NamedArgs } from './battleActionDetails';
+import { LangType } from './util';
 
 /**
  * Limited definition of battle.json, which we process from battle.js then add
@@ -70,21 +72,59 @@ const schoolAlias: { [key: string]: string } = {
   SHOOTER: 'Sharpshooter',
 };
 
-const targetLookup: { [range: string]: { [segment: string]: string } } = {
+/**
+ * Maps target_range + target_segment values to [full description, noun]
+ * tuples.
+ */
+const targetLookup: { [range: string]: { [segment: string]: [string, string] } } = {
   SINGLE: {
-    OPPONENT: 'Single enemy',
-    COLLEAGUE: 'Single ally',
-    BOTH: 'Single',
-    BOTH_EXCEPT_MYSELF: 'Another',
-    COLLEAGUE_EXCEPT_MYSELF: 'Another ally',
+    OPPONENT: ['Single enemy', 'enemy'],
+    COLLEAGUE: ['Single ally', 'ally'],
+    BOTH: ['Single', ''],
+    BOTH_EXCEPT_MYSELF: ['Another', 'other'],
+    COLLEAGUE_EXCEPT_MYSELF: ['Another ally', 'other ally'],
   },
   ALL: {
-    OPPONENT: 'All enemies',
-    COLLEAGUE: 'All allies',
-    BOTH: 'All',
-    BOTH_EXCEPT_MYSELF: 'All others',
-    COLLEAGUE_EXCEPT_MYSELF: 'All other ally',
+    OPPONENT: ['All enemies', 'enemies'],
+    COLLEAGUE: ['All allies', 'allies'],
+    BOTH: ['All', ''],
+    BOTH_EXCEPT_MYSELF: ['All others', 'others'],
+    COLLEAGUE_EXCEPT_MYSELF: ['All other allies', 'other allies'],
   },
+};
+
+// noinspection SpellCheckingInspection
+const targetMethodDescription: { [targetMethod: string]: string | null } = {
+  HP_RATIO_DESC: 'Highest HP%% %s',
+  HP_RATIO_ASC: 'Lowest HP%% %s',
+  SA_RANDOM: 'Random %s without status',
+  DIS_SA_RANDOM: 'Random %s without status',
+  RANDOM: 'Random %s',
+  NOTHING: null,
+  HP_DESC: 'Lowest HP %s',
+  HP_ASC: 'Highest HP %s',
+  ESNA: 'Random %s with status',
+  DISPEL: 'Random %s with status',
+
+  // Unconfirmed
+  MP_RANDOM: '%s',
+
+  // Used by, e.g., Porom's Curaise BSB CMD1
+  MARAISE: 'Ally with %s or lowest HP%% %s',
+
+  // Unconfirmed
+  LOT_BY_HP_RATE: 'Highest HP%% %s',
+
+  // Used by, e.g., Death.  It perhaps means "vulnerable enemy"?
+  SA_DEF_ATTRIBUTE_COUNT_AND_HAS_SA_BUNDLE_COUNT_SUM_ASC: 'Random %s',
+
+  // Unconfirmed - treating as above for now
+  SA_PARALYSIS_AND_SILENCE_DEF_ATTRIBUTE_COUNT_AND_HAS_SA_BUNDLE_COUNT_SUM_ASC: 'Random %s',
+
+  // These are all unconfirmed.
+  BUDDY_SMART: 'Smart %s',
+  AI_SMART: 'Smart %s',
+  AI_SMART_IGNORE_REFRECTION: 'Smart %s',
 };
 
 function makeBattleDataHelpers(lang: LangType) {
@@ -106,6 +146,7 @@ function makeBattleDataHelpers(lang: LangType) {
     targetRangeLookup: _.invert(conf.TARGET_RANGE),
     targetSegmentLookup: _.invert(conf.TARGET_SEGMENT),
     activeTargetMethodLookup: _.invert(conf.ACTIVE_TARGET_METHOD),
+    targetMethodLookup: _.invert(conf.TARGET_METHOD),
 
     describeTarget(
       rangeValue: string | number,
@@ -124,9 +165,28 @@ function makeBattleDataHelpers(lang: LangType) {
       ) {
         return 'Random enemies';
       } else if (targetLookup[range]) {
-        return targetLookup[range][segment] || null;
+        const lookupResult = targetLookup[range][segment];
+        return lookupResult ? lookupResult[0] : null;
       } else {
         return null;
+      }
+    },
+
+    describeTargetMethod(
+      rangeValue: string | number,
+      segmentValue: string | number,
+      activeTargetMethodValue: string | number | undefined,
+      targetMethodValue: string | number,
+    ): string | null {
+      const range = result.targetRangeLookup[rangeValue];
+      const segment = result.targetSegmentLookup[segmentValue];
+      const method = result.targetMethodLookup[targetMethodValue];
+      const methodDescription = targetMethodDescription[method];
+      if (!methodDescription) {
+        return result.describeTarget(rangeValue, segmentValue, activeTargetMethodValue);
+      } else {
+        const lookupResult = targetLookup[range][segment];
+        return lookupResult ? sprintf(methodDescription, lookupResult[1]).trim() : null;
       }
     },
   };

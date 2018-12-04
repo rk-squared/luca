@@ -212,8 +212,6 @@ export function convertAbility(
   const { options } = abilityData;
   const actionLookup = makeActionLookup(battleData);
 
-  const toDo = null; // TODO: Resolve these
-
   let alias = null;
   if (options.alias_name !== '' && options.alias_name !== options.name) {
     alias = options.alias_name;
@@ -265,7 +263,12 @@ export function convertAbility(
     time: msecToSec(options.cast_time),
     effects: getAbilityDescription(battleData, actionLookup, +abilityData.action_id, options, args),
     counter: toBoolOrNull(options.counter_enable),
-    autoTarget: toDo,
+    autoTarget: battleData.describeTargetMethod(
+      options.target_range,
+      options.target_segment,
+      options.active_target_method,
+      options.target_method,
+    ),
     sb: options.ss_point == null ? null : +options.ss_point,
     id: +abilityData.ability_id,
     action: action ? action.className : null,
