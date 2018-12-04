@@ -1,6 +1,8 @@
 import { BattleData } from './gameData';
 import { withPlus } from './util';
 
+import * as _ from 'lodash';
+
 interface StatusAilment {
   _name: string;
   canNotSetToEnemy: boolean;
@@ -32,6 +34,14 @@ interface StatusAilmentBundleDescription {
   statusAilmentIds: number[];
 }
 
+/**
+ * Many of FFRK's status ailments are implemented using funcMap properties to
+ * give the names of handler functions.
+ *
+ * We can key off of these handler functions' names to interpret status
+ * ailments instead of hard-coding individual status IDs or trying to parse
+ * internal status names.  This interface provides mappings to let us do that.
+ */
 interface StatusAilmentHandler {
   [functionName: string]: (status: StatusAilment) => StatusAilmentDescription | null;
 }
@@ -57,6 +67,18 @@ const statusAilmentBundleAliases: { [key: string]: string } = {
   ESNA: 'negative effects',
 };
 
+function isInBundle(battleData: BattleData, bundleId: number, statusAilmentId: number) {
+  return battleData.extra.statusAilmentBundles[bundleId].ids.indexOf(statusAilmentId) !== -1;
+}
+
+export function isCommonBuff(battleData: BattleData, statusAilmentId: number) {
+  return isInBundle(battleData, battleData.conf.STATUS_AILMENTS_BUNDLE.ESNA, statusAilmentId);
+}
+
+export function isCommonDebuff(battleData: BattleData, statusAilmentId: number) {
+  return isInBundle(battleData, battleData.conf.STATUS_AILMENTS_BUNDLE.DISPEL, statusAilmentId);
+}
+
 export function describeStatusAilment(
   battleData: BattleData,
   statusAilmentId: number,
@@ -65,10 +87,16 @@ export function describeStatusAilment(
   if (!status) {
     return null;
   }
+
   if (status.funcMap.set && setterHandlers[status.funcMap.set]) {
     return setterHandlers[status.funcMap.set](status);
   }
-  return null;
+
+  // Fall back to default.
+  return {
+    isBuff: isCommonBuff(battleData, statusAilmentId),
+    description: _.startCase(_.camelCase(status._name)),
+  };
 }
 
 export function describeStatusAilmentBundle(
