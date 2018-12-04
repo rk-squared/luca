@@ -117,6 +117,18 @@ function helperSetValueSetter(node) {
   }
 }
 
+// jscodeshift match expression for
+// `someValue: ...`
+// (as part of an object literal)
+const propertyValue = {
+  type: 'ObjectProperty',
+  method: false,
+  computed: false,
+  key: {
+    type: 'Identifier',
+  },
+};
+
 function getArgSource(j, argNode) {
   if (j.match(argNode, getValue)) {
     return getValueArgument(argNode);
@@ -210,6 +222,19 @@ module.exports = function(fileInfo, api, options) {
 
           const argSourceNumber = getArgSourceNumber(j, setNode.arguments[1], localVariables);
           if (argSourceNumber != null) {
+            args[actionName].args[namedArg] = argSourceNumber;
+          }
+        });
+
+      // Process properties.
+      j(moduleDefinition)
+        .find(j.ObjectProperty, propertyValue)
+        .forEach(propertyPath => {
+          const propertyNode = propertyPath.node;
+          const argSourceNumber = getArgSourceNumber(j, propertyNode.value, localVariables);
+          if (argSourceNumber != null) {
+            const namedArg = propertyNode.key.name;
+            logDebug('  ' + namedArg);
             args[actionName].args[namedArg] = argSourceNumber;
           }
         });
