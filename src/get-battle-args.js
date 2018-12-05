@@ -110,11 +110,15 @@ const helperSetValue = {
 };
 function helperSetValueSetter(node) {
   const setterName = node.callee.property.name;
-  if (setterName.startsWith('set')) {
-    return _.lowerFirst(setterName.substring(3));
-  } else {
-    return null;
+  let match = setterName.match(/^set(.*)/);
+  if (match) {
+    return _.lowerFirst(match[1]);
   }
+  match = setterName.match(/^calc(Critical.*)/);
+  if (match) {
+    return _.lowerFirst(match[1]);
+  }
+  return null;
 }
 
 // jscodeshift match expression for
@@ -159,7 +163,7 @@ function getMultiArgSourceNumber(j, arrayNode, localVariables) {
   return result.length ? result : null;
 }
 
-module.exports = function(fileInfo, api, options) {
+module.exports = function (fileInfo, api, options) {
   const j = api.jscodeshift;
 
   const args = {};
@@ -278,7 +282,11 @@ module.exports = function(fileInfo, api, options) {
 
   const argsText = JSON.stringify(args, null, 2);
   if (options.lang) {
-    fs.writeFileSync(path.join(srcPath, options.lang, 'battleArgs.json'), argsText);
+    const filename = path.join(srcPath, options.lang, 'battleArgs.json');
+    if (fs.existsSync(filename)) {
+      fs.renameSync(filename, filename + '.bak');
+    }
+    fs.writeFileSync(filename, argsText);
   } else {
     console.log(argsText);
   }

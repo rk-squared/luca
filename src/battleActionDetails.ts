@@ -19,6 +19,7 @@ export interface NamedArgs {
   ignoresAttackHit?: number;
   elements?: number[];
   critical?: number;
+  criticalCoefficient?: number;
   matkElement?: number;
   minDamageFactor?: number;
   situationalRecalculateDamageHookType?: number;
@@ -43,7 +44,7 @@ export interface NamedArgs {
    * A status ailment ID or status ailment bundle ID (see
    * StatusAilmentsConfig.getBundle) for a status applied to self.
    */
-  selfSaBundle?: number;
+  selfSaBundleId?: number;
 
   /**
    * A single status ailment ID for a status applied to self.
@@ -215,7 +216,7 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
       forceHit: 5,
       barrageNum: 6,
       isSameTarget: 7,
-      selfSaBundle: 9,
+      selfSaBundleId: 9,
       selfSaOptionsDuration: 10,
       ignoresAttackHit: 11,
       selfSaAnimationFlag: 12,
@@ -232,7 +233,6 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
   PhysicalAttackMultiAndSelfSaAction: {
     formula: 'Physical',
     args: {
-      // TODO: setDamageCalculateParamAdjustConf(12, [13, 14])
       damageFactor: 1,
       barrageNum: 2,
       atkType: 3,
@@ -242,7 +242,14 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
       ignoresAttackHit: 8,
       selfSaOptionsDuration: 9,
       selfSaAnimationFlag: 10,
+      damageCalculateParamAdjust: 12,
       critical: 17,
+    },
+    multiArgs: {
+      damageCalculateParamAdjustConf: [
+        13,
+        14
+      ]
     },
     formatEnlir(battleData: BattleData, options: Options, args: NamedArgs): string {
       let result = formatEnlirAttack(battleData, options, args);
