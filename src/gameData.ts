@@ -182,7 +182,7 @@ function makeBattleDataHelpers(lang: LangType) {
       const segment = result.targetSegmentLookup[segmentValue];
       const method = result.targetMethodLookup[targetMethodValue];
       const methodDescription = targetMethodDescription[method];
-      if (!methodDescription) {
+      if (range === 'SELF' || !methodDescription) {
         return result.describeTarget(rangeValue, segmentValue, activeTargetMethodValue);
       } else {
         const lookupResult = targetLookup[range][segment];
@@ -212,8 +212,8 @@ export interface BattleActionArgs {
 type BattleDataHelpers = ReturnType<typeof makeBattleDataHelpers>;
 export type BattleData = BattleDataType &
   BattleDataHelpers & {
-    battleActionArgs: { [actionName: string]: BattleActionArgs };
-  };
+  battleActionArgs: { [actionName: string]: BattleActionArgs };
+};
 
 export const battleData: { [lang in LangType]: BattleData } = {
   [LangType.Gl]: {
