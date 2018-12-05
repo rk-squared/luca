@@ -2,6 +2,8 @@
 
 exports[`battleActions convertAbility converts simple character abilities 1`] = `
 Object {
+  "action": "PhysicalAttackMultiAndHealHpByHitDamageAction",
+  "alias": null,
   "args": Object {
     "atkType": 1,
     "barrageNum": 4,
@@ -13,25 +15,18 @@ Object {
     "healHpFactor": 20,
     "isSameTarget": 1,
   },
-  "autoTarget": null,
+  "autoTarget": "Lowest HP% enemy",
   "counter": true,
   "effects": "Four single attacks (0,75 each), heals the user for 20% of the damage dealt",
   "element": "Dark",
   "formula": "Physical",
-  "gl": true,
   "id": 30271101,
-  "introducingEvent": null,
-  "max": null,
   "multiplier": 3,
   "name": "Dread Weapon",
-  "nameJp": null,
-  "orbs": null,
-  "rarity": null,
   "sb": 75,
   "school": "Darkness",
   "target": "Single enemy",
   "time": 1.65,
   "type": "PHY",
-  "uses": null,
 }
 `;
