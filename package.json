@@ -56,10 +56,13 @@
     "@types/number-to-words": "^1.2.0",
     "@types/sprintf-js": "^1.1.1",
     "@types/strip-bom": "^3.0.0",
+    "@types/yargs": "^12.0.1",
     "axios": "^0.18.0",
     "babylon": "^6.18.0",
     "copyfiles": "^2.1.0",
     "fs-extra": "^7.0.1",
+    "google-auth-library": "^2.0.1",
+    "googleapis": "^35.0.0",
     "jest": "^23.6.0",
     "js-beautify": "^1.8.8",
     "jscodeshift": "^0.5.1",
@@ -76,6 +79,7 @@
     "tslint": "^5.11.0",
     "typescript": "^3.1.6",
     "underscore": "^1.9.1",
-    "winston": "^3.1.0"
+    "winston": "^3.1.0",
+    "yargs": "^12.0.5"
   }
 }
