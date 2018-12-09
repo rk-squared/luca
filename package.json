@@ -14,7 +14,7 @@
     "get-battle-args-gl": "jscodeshift --run-in-band --dry --transform src/get-battle-args.js tmp/gl/battle.js --lang=gl",
     "get-battle-args-jp": "jscodeshift --run-in-band --dry --transform src/get-battle-args.js tmp/jp/battle.js --lang=jp",
     "get-battle-args": "npm run get-battle-args-gl && npm run get-battle-args-jp",
-    "copy-json": "copyfiles \"./src/gl/*.json\" \"./src/jp/*.json\" dist --up 1"
+    "copy-json": "copyfiles \"./src/gl/*.json\" \"./src/jp/*.json\" dist --up 1 && copyfiles \"./src/enlir/*.json\" dist --up 1"
   },
   "jest": {
     "roots": [
@@ -77,6 +77,7 @@
     "ts-jest": "^23.10.5",
     "ts-node": "^7.0.1",
     "tslint": "^5.11.0",
+    "tslint-config-prettier": "^1.17.0",
     "typescript": "^3.1.6",
     "underscore": "^1.9.1",
     "winston": "^3.1.0",
