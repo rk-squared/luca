@@ -16,13 +16,15 @@ import { logger } from './logger';
 
 import * as _ from 'lodash';
 
+// tslint:disable no-console
+
 // This is equivalent to `typeof google.auth.OAuth2`, but importing it directly
 // (and listing it as a dev. dependency) appears to be necessary to silence
 // TypeScript warnings.
 import { OAuth2Client } from 'google-auth-library';
 
 function questionAsync(r: readline.ReadLine, query: string): Promise<string> {
-  return new Promise<string>((resolve) => {
+  return new Promise<string>(resolve => {
     r.question(query, resolve);
   });
 }
@@ -39,9 +41,9 @@ const tokenPath = path.join(workPath, 'token.json');
 const enlirCredentials = require('../credentials.json');
 
 // noinspection SpellCheckingInspection
-const spreadsheetId: { [name: string]: string } = {
+const enlirSpreadsheetIds: { [name: string]: string } = {
   enlir: '16K1Zryyxrh7vdKVF1f7eRrUAOC5wuzvC3q2gFLch6LQ',
-  community: '1f8OJIQhpycljDQ8QNDk_va1GJ1u7RVoMaNjFcHH0LKk'
+  community: '1f8OJIQhpycljDQ8QNDk_va1GJ1u7RVoMaNjFcHH0LKk',
 };
 
 interface GoogleApiCredentials {
@@ -103,9 +105,10 @@ async function getNewToken(oAuth2Client: OAuth2Client): Promise<OAuth2Client> {
 }
 
 const toBool = (value: string) => value === 'Y';
-const toInt = (value: string) => value === '' ? null : +value;
-const toFloat = (value: string) => value === '' ? null : Number.parseFloat(value.replace(',', '.'));
-const toString = (value: string) => value === '' ? null : value;
+const toInt = (value: string) => (value === '' ? null : +value);
+const toFloat = (value: string) =>
+  value === '' ? null : Number.parseFloat(value.replace(',', '.'));
+const toString = (value: string) => (value === '' ? null : value);
 const checkToBool = (value: string) => value === '✓';
 
 function toStringWithDecimals(value: string) {
@@ -131,16 +134,16 @@ function toCommon(field: string, value: string) {
 const stats = new Set(['HP', 'ATK', 'DEF', 'MAG', 'RES', 'MND', 'ACC', 'EVA', 'SPD']);
 
 const skillFields: { [col: string]: (value: string) => any } = {
-  'Type': toString,
-  'Target': toString,
-  'Formula': toString,
-  'Multiplier': toFloat,
-  'Element': toString,
-  'Time': toFloat,
-  'Effects': toStringWithDecimals,
-  'Counter': toBool,
+  Type: toString,
+  Target: toString,
+  Formula: toString,
+  Multiplier: toFloat,
+  Element: toString,
+  Time: toFloat,
+  Effects: toStringWithDecimals,
+  Counter: toBool,
   'Auto Target': toString,
-  'SB': toInt,
+  SB: toInt,
 };
 
 const shouldAlwaysSkip = (col: string) => col === '✓' || col === 'Img';
@@ -307,7 +310,7 @@ function convertMagicite(rows: any[]): any[] {
       } else if (col === 'Magicite Ultra Skill') {
         if (!skipUltraSkill) {
           item.magiciteUltraSkill = {
-            name: rows[i][j]
+            name: rows[i][j],
           };
         }
       } else if (inUltraSkill) {
@@ -484,22 +487,21 @@ async function convertEnlir(outputDirectory: string) {
 const argv = yargs
   .option('download', {
     alias: 'd',
-    default: true
+    default: true,
   })
   .option('sheet', {
     default: 'community',
-    choices: Object.keys(spreadsheetId)
+    choices: Object.keys(enlirSpreadsheetIds),
   })
   .option('output-directory', {
     default: '.',
-    description: 'output directory'
-  })
-  .argv;
+    description: 'output directory',
+  }).argv;
 
 async function main() {
   if (argv.download) {
     const auth = await authorize(enlirCredentials);
-    await downloadEnlir(auth, spreadsheetId[argv.sheet]);
+    await downloadEnlir(auth, enlirSpreadsheetIds[argv.sheet]);
   }
   await convertEnlir(argv.outputDirectory);
 }

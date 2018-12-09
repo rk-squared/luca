@@ -5,22 +5,22 @@ import * as fs from 'fs-extra';
 const stripBom = require('strip-bom');
 
 import { convertAbility } from './battleActions';
-import { tryLoadCharacters } from './enlirData';
+import { tryLoadAll } from './enlirData';
 import { battleData } from './gameData';
 import { logger } from './logger';
-import { GetBattleInitData, Buddy, Supporter } from './schemas/get_battle_init_data';
+import { Buddy, GetBattleInitData, Supporter } from './schemas/get_battle_init_data';
 import { LangType } from './util';
 
 // tslint:disable no-console
 
 function getBattleInitAbilities(fileNames: string[]) {
-  const enlirCharacters = tryLoadCharacters();
+  const enlir = tryLoadAll();
 
   const result: any[] = [];
-  for (const i of fileNames) {
+  for (const fileName of fileNames) {
     result.push({});
     const thisResult = result[result.length - 1];
-    const captured = JSON.parse(stripBom(fs.readFileSync(i).toString()));
+    const captured = JSON.parse(stripBom(fs.readFileSync(fileName).toString()));
 
     // These scripts will mostly be used to mine JP, so assume Japanese,
     // unless we have an RK Squared style capture with a GL URL.
@@ -28,7 +28,7 @@ function getBattleInitAbilities(fileNames: string[]) {
       captured.url && captured.url.startsWith('http://ffrk.denagames.com/')
         ? LangType.Gl
         : LangType.Jp;
-    logger.debug(`Processing ${i} as ${lang}`);
+    logger.debug(`Processing ${fileName} as ${lang}`);
 
     // Handle both RK Squared captures (which include metadata, with the reply
     // as a `data` property) and direct captures.
@@ -47,16 +47,16 @@ function getBattleInitAbilities(fileNames: string[]) {
           name: character.params[0].disp_name,
         };
 
-        const enlirCharacter = enlirCharacters ? enlirCharacters[+character.id] : null;
+        const enlirCharacter = enlir.characters ? enlir.characters[+character.id] : null;
         if (enlirCharacter) {
           thisCharacterResult.nameGl = enlirCharacter.name;
         }
 
         thisCharacterResult.abilities = character.abilities.map(i =>
-          convertAbility(battleData[lang], i),
+          convertAbility(battleData[lang], i, enlir),
         );
         thisCharacterResult.soulBreaks = character.soul_strikes.map(i =>
-          convertAbility(battleData[lang], i),
+          convertAbility(battleData[lang], i, enlir),
         );
 
         thisResult[characterType].push(thisCharacterResult);

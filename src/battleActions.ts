@@ -1,4 +1,5 @@
 import { BattleActionDetails, battleActionDetails, NamedArgs } from './battleActionDetails';
+import { EnlirAll } from './enlirData';
 import { BattleActionArgs, BattleData } from './gameData';
 import { logger } from './logger';
 import {
@@ -208,9 +209,12 @@ const msecToSec = (msec: string | number) => +msec / 1000;
 export function convertAbility(
   battleData: BattleData,
   abilityData: BuddyAbility | BuddySoulStrike | BeastActiveSkill,
+  enlir?: EnlirAll,
 ): any {
   const { options } = abilityData;
   const actionLookup = makeActionLookup(battleData);
+
+  const id = +abilityData.ability_id;
 
   let alias = null;
   if (options.alias_name !== '' && options.alias_name !== options.name) {
@@ -234,6 +238,9 @@ export function convertAbility(
   );
   const args = getNamedArgs(battleData, actionLookup, +abilityData.action_id, options);
 
+  const enlirAbility = enlir && enlir.abilities && enlir.abilities[id];
+  // FIXME: Implement looking up soul break names from Enlir
+
   // Not yet used:
   // const breaksDamageCap = toBool(options.max_damage_threshold_type);
 
@@ -250,6 +257,7 @@ export function convertAbility(
   return {
     school,
     name: options.name.trim(),
+    nameGl: enlirAbility ? enlirAbility.name : null,
     alias: alias ? alias.trim() : alias,
     type: battleData.damageTypeLookup[+abilityData.exercise_type],
     target: battleData.describeTarget(
@@ -270,7 +278,7 @@ export function convertAbility(
       options.target_method,
     ),
     sb: options.ss_point == null ? null : +options.ss_point,
-    id: +abilityData.ability_id,
+    id,
     action: action ? action.className : null,
     args: getNamedArgs(battleData, actionLookup, +abilityData.action_id, options),
   };

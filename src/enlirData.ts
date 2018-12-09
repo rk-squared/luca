@@ -121,16 +121,56 @@ interface LegendSphereStatBlock {
   spd: number;
 }
 
+export interface EnlirAbility {
+  school: string;
+  name: string;
+  rarity: number;
+  type: string;
+  target: string;
+  formula: string;
+  multiplier: number;
+  element: string;
+  time: number;
+  effects: string;
+  counter: boolean;
+  autoTarget: string;
+  sb: number;
+  uses: number;
+  max: number;
+  orbs: { [orbName: string]: number[] };
+  introducingEvent: string;
+  nameJp: string;
+  id: number;
+  gl: boolean;
+}
+
+export interface EnlirAll {
+  abilities: { [id: number]: EnlirAbility } | null;
+  characters: { [id: number]: EnlirCharacter } | null;
+}
+
 export function tryLoad<T>(load: () => { [id: number]: T }): { [id: number]: T } | null {
   try {
     return load();
   } catch (e) {
-    logger.warn(`Failed to load Enlir data; some values may be missing`);
+    logger.warn(`Failed to load Enlir data: ${e}. Some features will be unavailable.`);
     return null;
   }
 }
 
-export function loadCharacters(): { [id: number]: EnlirCharacter } | null {
+export function loadAbilities(): { [id: number]: EnlirAbility } {
+  const data = fs.readJSONSync(path.join(enlirPath, 'abilities.json'));
+  return _.keyBy(data, 'id');
+}
+
+export function loadCharacters(): { [id: number]: EnlirCharacter } {
   const data = fs.readJSONSync(path.join(enlirPath, 'characters.json'));
   return _.keyBy(data, 'id');
+}
+
+export function tryLoadAll(): EnlirAll {
+  return {
+    abilities: tryLoad(loadAbilities),
+    characters: tryLoad(loadCharacters),
+  };
 }
