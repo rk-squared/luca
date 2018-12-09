@@ -85,6 +85,57 @@ export interface EnlirCharacter {
   id: number;
 }
 
+export interface EnlirAbility {
+  school: string;
+  name: string;
+  rarity: number;
+  type: string;
+  target: string;
+  formula: string;
+  multiplier: number;
+  element: string;
+  time: number;
+  effects: string;
+  counter: boolean;
+  autoTarget: string;
+  sb: number;
+  uses: number;
+  max: number;
+  orbs: { [orbName: string]: number[] };
+  introducingEvent: string;
+  nameJp: string;
+  id: number;
+  gl: boolean;
+}
+
+export interface EnlirMagicite {
+  element: string;
+  name: string;
+  realm: string;
+  rarity: number;
+  introducingEventLv99: string;
+  stats: MagiciteStatBlock;
+  passives: { [passiveName: string]: { [key: number]: number } };
+  cooldown: number;
+  duration: number;
+  magiciteUltraSkill: EnlirMagiciteUltraSkill;
+  nameJp: string;
+  id: number;
+  gl: boolean;
+}
+
+export interface EnlirMagiciteUltraSkill {
+  name: string;
+  type: string;
+  autoTarget: string;
+  formula: string;
+  multiplier: number;
+  element: string;
+  time: number;
+  effects: string;
+  counter: boolean;
+}
+
 interface CharacterStatBlock {
   hp: number;
   atk: number;
@@ -121,32 +172,20 @@ interface LegendSphereStatBlock {
   spd: number;
 }
 
-export interface EnlirAbility {
-  school: string;
-  name: string;
-  rarity: number;
-  type: string;
-  target: string;
-  formula: string;
-  multiplier: number;
-  element: string;
-  time: number;
-  effects: string;
-  counter: boolean;
-  autoTarget: string;
-  sb: number;
-  uses: number;
-  max: number;
-  orbs: { [orbName: string]: number[] };
-  introducingEvent: string;
-  nameJp: string;
-  id: number;
-  gl: boolean;
+interface MagiciteStatBlock {
+  hp: number;
+  atk: number;
+  def: number;
+  mag: number;
+  res: number;
+  mnd: number;
+  spd: number;
 }
 
 export interface EnlirAll {
   abilities: { [id: number]: EnlirAbility } | null;
   characters: { [id: number]: EnlirCharacter } | null;
+  magicite: { [id: number]: EnlirMagicite } | null;
 }
 
 export function tryLoad<T>(load: () => { [id: number]: T }): { [id: number]: T } | null {
@@ -168,9 +207,15 @@ export function loadCharacters(): { [id: number]: EnlirCharacter } {
   return _.keyBy(data, 'id');
 }
 
+export function loadMagicite(): { [id: number]: EnlirMagicite } {
+  const data = fs.readJSONSync(path.join(enlirPath, 'magicite.json'));
+  return _.keyBy(data, 'id');
+}
+
 export function tryLoadAll(): EnlirAll {
   return {
     abilities: tryLoad(loadAbilities),
     characters: tryLoad(loadCharacters),
+    magicite: tryLoad(loadMagicite),
   };
 }

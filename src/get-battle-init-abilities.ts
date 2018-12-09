@@ -63,10 +63,17 @@ function getBattleInitAbilities(fileNames: string[]) {
       }
     }
 
+    thisResult.magicite = [];
     for (const magicite of [...battle.main_beast, ...battle.sub_beast]) {
+      const enlirMagicite = enlir.magicite ? enlir.magicite[+magicite.id] : null;
+      const thisMagicite: any = {
+        nameGl: enlirMagicite ? enlirMagicite.name : null,
+        skills: [],
+      };
       for (const abilityData of magicite.active_skills) {
-        console.log(convertAbility(battleData[lang], abilityData));
+        thisMagicite.skills.push(convertAbility(battleData[lang], abilityData, enlir));
       }
+      thisResult.magicite.push(thisMagicite);
     }
   }
 
