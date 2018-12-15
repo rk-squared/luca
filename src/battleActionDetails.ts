@@ -20,15 +20,26 @@ export interface NamedArgs {
   elements?: number[];
   critical?: number;
   criticalCoefficient?: number;
-  matkElement?: number;
   minDamageFactor?: number;
   situationalRecalculateDamageHookType?: number;
   damageCalculateTypeByAbility?: number;
-  matkExponentialFactor?: number;
   ignoresReflection?: number;
   ignoresMirageAndMightyGuard?: number;
   ignoresStatusAilmentsBarrier?: number;
   burstAbility?: number[];
+
+  atkExponentialFactor?: number;
+  matkExponentialFactor?: number;
+
+  /**
+   * Single physical element.  The elements array is more flexible.
+   */
+  atkElement?: number;
+
+  /**
+   * Single magical element.  The elements array is more flexible.
+   */
+  matkElement?: number;
 
   /**
    * Healing factor.
@@ -163,6 +174,7 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
     },
     formatEnlir: formatEnlirHeal,
   },
+
   HealHpAndHealSaAction: {
     formula: 'Magical',
     args: {
@@ -177,6 +189,7 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
       );
     },
   },
+
   MagicAttackMultiAction: {
     formula: 'Magical',
     args: {
@@ -195,6 +208,56 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
     },
     formatEnlir: formatEnlirAttack,
   },
+
+  MagicAttackMultiWithMultiElementAction: {
+    formula: 'Magical',
+    args: {
+      damageFactor: 1,
+      minDamageFactor: 2,
+      barrageNum: 3,
+      isSameTarget: 4,
+      matkExponentialFactor: 11,
+      damageCalculateTypeByAbility: 10,
+      damageCalculateParamAdjust: 12,
+    },
+    multiArgs: {
+      damageCalculateParamAdjustConf: [13, 14, 15, 16, 17, 18],
+    },
+    formatEnlir: formatEnlirAttack,
+  },
+
+  // This is used for the en-element status's Attack replacement.
+  PhysicalAttackElementAction: {
+    args: {
+      damageFactor: 1,
+      atkElement: 2,
+      atkType: 3,
+      forceHit: 4,
+    },
+    multiArgs: {},
+    formatEnlir: formatEnlirAttack,
+  },
+
+  PhysicalAttackMultiAction: {
+    args: {
+      damageFactor: 1,
+      barrageNum: 2,
+      atkType: 3,
+      forceHit: 4,
+      atkElement: 5,
+      isSameTarget: 6,
+      situationalRecalculateDamageHookType: 9,
+      atkExponentialFactor: 16, // TODO: Implement
+      critical: 7,
+      damageCalculateParamAdjust: 8,
+      damageCalculateTypeByAbility: 14,
+    },
+    multiArgs: {
+      damageCalculateParamAdjustConf: [10, 11, 12, 13, 15],
+    },
+    formatEnlir: formatEnlirAttack,
+  },
+
   PhysicalAttackMultiAndHealHpByHitDamageAction: {
     formula: 'Physical',
     args: {
@@ -212,6 +275,7 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
       );
     },
   },
+
   PhysicalAttackMultiAndHpBarterAndSelfSaAction: {
     formula: 'Physical',
     args: {
@@ -235,6 +299,7 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
       return result;
     },
   },
+
   PhysicalAttackMultiAndSelfSaAction: {
     formula: 'Physical',
     args: {
@@ -258,5 +323,22 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
       result += ', ' + formatSelfStatus(battleData, args);
       return result;
     },
+  },
+
+  PhysicalAttackMultiWithMultiElementAction: {
+    args: {
+      damageFactor: 1,
+      barrageNum: 2,
+      atkType: 3,
+      forceHit: 4,
+      isSameTarget: 5,
+      criticalCoefficient: 10,
+      critical: 19,
+      damageCalculateParamAdjust: 11,
+    },
+    multiArgs: {
+      damageCalculateParamAdjustConf: [12, 13, 14, 15, 16, 17, 18],
+    },
+    formatEnlir: formatEnlirAttack,
   },
 };

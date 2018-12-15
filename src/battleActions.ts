@@ -199,6 +199,8 @@ export function getElements(battleData: BattleData, args: NamedArgs | null): str
     return null;
   } else if (args.elements && args.elements.length) {
     return args.elements.map(i => battleData.elementTypeLookup[i]).join(', ');
+  } else if (args.atkElement) {
+    return battleData.elementTypeLookup[args.atkElement];
   } else if (args.matkElement) {
     return battleData.elementTypeLookup[args.matkElement];
   } else {
