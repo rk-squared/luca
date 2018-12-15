@@ -37,9 +37,6 @@ fs.ensureDirSync(workPath);
 // time.
 const tokenPath = path.join(workPath, 'token.json');
 
-// Load client secrets from a local file.
-const enlirCredentials = require('../credentials.json');
-
 // noinspection SpellCheckingInspection
 const enlirSpreadsheetIds: { [name: string]: string } = {
   enlir: '16K1Zryyxrh7vdKVF1f7eRrUAOC5wuzvC3q2gFLch6LQ',
@@ -133,6 +130,9 @@ function toCommon(field: string, value: string) {
 
 const stats = new Set(['HP', 'ATK', 'DEF', 'MAG', 'RES', 'MND', 'ACC', 'EVA', 'SPD']);
 
+/**
+ * Fields common to "skills" - abilities, soul breaks, etc.
+ */
 const skillFields: { [col: string]: (value: string) => any } = {
   Type: toString,
   Target: toString,
@@ -144,6 +144,7 @@ const skillFields: { [col: string]: (value: string) => any } = {
   Counter: toBool,
   'Auto Target': toString,
   SB: toInt,
+  Points: toInt,
 };
 
 const shouldAlwaysSkip = (col: string) => col === '✓' || col === 'Img';
@@ -433,6 +434,31 @@ function convertRelics(rows: any[]): any[] {
   return relics;
 }
 
+function convertSoulBreaks(rows: any[]): any[] {
+  const soulBreaks: any[] = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const item: any = {};
+    for (let j = 0; j < rows[0].length; j++) {
+      const col = rows[0][j];
+      if (shouldAlwaysSkip(col)) {
+        continue;
+      }
+
+      const field = _.camelCase(col);
+      if (skillFields[col]) {
+        item[field] = skillFields[col](rows[i][j]);
+      } else {
+        item[field] = toCommon(field, rows[i][j]);
+      }
+    }
+
+    soulBreaks.push(item);
+  }
+
+  return soulBreaks;
+}
+
 const dataTypes = [
   {
     sheet: 'Abilities',
@@ -459,6 +485,11 @@ const dataTypes = [
     localName: 'relics',
     converter: convertRelics,
   },
+  {
+    sheet: 'Soul Breaks',
+    localName: 'soulBreaks',
+    converter: convertSoulBreaks,
+  },
 ];
 
 async function downloadEnlir(auth: OAuth2Client, spreadsheetId: string) {
@@ -480,7 +511,12 @@ async function convertEnlir(outputDirectory: string) {
     logger.info(`Converting ${localName}...`);
     const rawData = await fs.readJson(path.join(workPath, localName + '.json'));
     const data = converter(rawData.values);
-    await fs.writeJson(path.join(outputDirectory, localName + '.json'), data, { spaces: 2 });
+
+    const outputFile = path.join(outputDirectory, localName + '.json');
+    if (fs.existsSync(outputFile)) {
+      fs.renameSync(outputFile, outputFile + '.bak');
+    }
+    await fs.writeJson(outputFile, data, { spaces: 2 });
   }
 }
 
@@ -498,8 +534,25 @@ const argv = yargs
     description: 'output directory',
   }).argv;
 
+async function loadEnlirCredentials() {
+  const enlirCredentialsFilename = path.resolve(__dirname, '..', 'credentials.json');
+  try {
+    return await fs.readJson(enlirCredentialsFilename);
+  } catch (e) {
+    console.error(e.message);
+    console.error('Please create a credentials.json file, following the instructions at');
+    console.error('https://developers.google.com/sheets/api/quickstart/nodejs');
+    return null;
+  }
+}
+
 async function main() {
   if (argv.download) {
+    const enlirCredentials = await loadEnlirCredentials();
+    if (!enlirCredentials) {
+      return;
+    }
+
     const auth = await authorize(enlirCredentials);
     await downloadEnlir(auth, enlirSpreadsheetIds[argv.sheet]);
   }
