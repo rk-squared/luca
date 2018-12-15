@@ -63,6 +63,11 @@ export interface NamedArgs {
 
   damageCalculateParamAdjust?: number;
   damageCalculateParamAdjustConf?: number[];
+
+  /**
+   * For diagnostic/debugging purposes, we support tracking unknown arguments.
+   */
+  unknown?: { [id: number]: number };
 }
 
 export interface BattleActionDetails extends BattleActionArgs {
@@ -246,10 +251,7 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
       critical: 17,
     },
     multiArgs: {
-      damageCalculateParamAdjustConf: [
-        13,
-        14
-      ]
+      damageCalculateParamAdjustConf: [13, 14],
     },
     formatEnlir(battleData: BattleData, options: Options, args: NamedArgs): string {
       let result = formatEnlirAttack(battleData, options, args);

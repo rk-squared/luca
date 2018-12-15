@@ -126,6 +126,10 @@ export function getNamedArgs(
 
   const args = getArgs(options);
 
+  // For diagnostics and development, track the set of argument indexes that we
+  // haven't used.
+  const unhandledArgs = new Set(_.filter(args.map((value, index) => (value ? index : 0))));
+
   // Map arguments that are specified in FFRK JS code and that we manually
   // define in our own TS code to match.
   // FIXME: This is ugly.  Refactor and unit test.
@@ -138,16 +142,22 @@ export function getNamedArgs(
       ]),
     ),
   };
+  _.forEach(argSource.args, i => i && unhandledArgs.delete(i));
+  if (argSource.multiArgs) {
+    _.forEach(argSource.multiArgs, i => _.forEach(i, j => unhandledArgs.delete(j)));
+  }
 
   // Map arguments that are specified in FFRK actionMap options.
   function tryArg(key: keyof NamedArgs, argNumber: number | undefined) {
     if (argNumber) {
       result[key] = args[argNumber];
+      unhandledArgs.delete(argNumber);
     }
   }
   function tryArgList(key: keyof NamedArgs, argNumbers: number[] | undefined) {
     if (argNumbers && argNumbers.length) {
       result[key] = _.filter(argNumbers.map(i => args[i]));
+      _.forEach(argNumbers, i => unhandledArgs.delete(i));
     }
   }
   tryArgList('elements', action.elements && action.elements.args);
@@ -159,6 +169,13 @@ export function getNamedArgs(
   tryArgList('setSaBundle', action.setSa && action.setSa.bundleArgs);
   tryArgList('unsetSaId', action.unsetSa && action.unsetSa.args);
   tryArgList('unsetSaBundle', action.unsetSa && action.unsetSa.bundleArgs);
+
+  // Record unhandled arguments for diagnostic and development purposes.
+  if (unhandledArgs.size) {
+    const unknown: { [i: number]: number } = {};
+    unhandledArgs.forEach(i => (unknown[i] = args[i]));
+    result.unknown = unknown;
+  }
 
   return result;
 }
@@ -241,8 +258,7 @@ export function convertAbility(
   const enlirAbility = enlir && enlir.abilities && enlir.abilities[id];
   // FIXME: Implement looking up soul break names from Enlir
 
-  // Not yet used:
-  // const breaksDamageCap = toBool(options.max_damage_threshold_type);
+  const breaksDamageCap = toBool(options.max_damage_threshold_type);
 
   // Omit options.target_death; it corresponds to TARGET_DEATH, but abilities'
   // effects make it obvious whether they can target dead allies.
@@ -278,6 +294,7 @@ export function convertAbility(
       options.target_method,
     ),
     sb: options.ss_point == null ? null : +options.ss_point,
+    breaksDamageCap,
     id,
     action: action ? action.className : null,
     args: getNamedArgs(battleData, actionLookup, +abilityData.action_id, options),
