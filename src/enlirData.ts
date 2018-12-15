@@ -91,9 +91,9 @@ export interface EnlirAbility {
   rarity: number;
   type: string;
   target: string;
-  formula: string;
-  multiplier: number;
-  element: string;
+  formula: string | null;
+  multiplier: number | null;
+  element: string | null;
   time: number;
   effects: string;
   counter: boolean;
@@ -128,12 +128,34 @@ export interface EnlirMagiciteUltraSkill {
   name: string;
   type: string;
   autoTarget: string;
-  formula: string;
-  multiplier: number;
-  element: string;
+  formula: string | null;
+  multiplier: number | null;
+  element: string | null;
   time: number;
   effects: string;
   counter: boolean;
+}
+
+export interface EnlirSoulBreak {
+  realm: string;
+  character: string;
+  name: string;
+  type: string;
+  target: string;
+  formula: string | null;
+  multiplier: number | null;
+  element: string | null;
+  time: number;
+  effects: string;
+  counter: boolean;
+  autoTarget: string;
+  points: number;
+  tier: string;
+  master: string | null;
+  relic: string;
+  nameJp: string;
+  id: number;
+  gl: boolean;
 }
 
 interface CharacterStatBlock {
@@ -186,6 +208,7 @@ export interface EnlirAll {
   abilities: { [id: number]: EnlirAbility } | null;
   characters: { [id: number]: EnlirCharacter } | null;
   magicite: { [id: number]: EnlirMagicite } | null;
+  soulBreaks: { [id: number]: EnlirSoulBreak } | null;
 }
 
 export function tryLoad<T>(load: () => { [id: number]: T }): { [id: number]: T } | null {
@@ -212,10 +235,16 @@ export function loadMagicite(): { [id: number]: EnlirMagicite } {
   return _.keyBy(data, 'id');
 }
 
+export function loadSoulBreaks(): { [id: number]: EnlirSoulBreak } {
+  const data = fs.readJSONSync(path.join(enlirPath, 'soulBreaks.json'));
+  return _.keyBy(data, 'id');
+}
+
 export function tryLoadAll(): EnlirAll {
   return {
     abilities: tryLoad(loadAbilities),
     characters: tryLoad(loadCharacters),
     magicite: tryLoad(loadMagicite),
+    soulBreaks: tryLoad(loadSoulBreaks),
   };
 }

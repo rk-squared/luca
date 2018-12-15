@@ -221,6 +221,18 @@ export function getAbilityDescription(
   }
 }
 
+function findInEnlir(enlir: EnlirAll | undefined, id: number) {
+  if (!enlir) {
+    return null;
+  } else if (enlir.abilities && enlir.abilities[id]) {
+    return enlir.abilities[id];
+  } else if (enlir.soulBreaks && enlir.soulBreaks[id]) {
+    return enlir.soulBreaks[id];
+  } else {
+    return null;
+  }
+}
+
 const toBool = (value: string | number) => !!+value;
 const toBoolOrNull = (value: string | number | undefined) => (value == null ? null : toBool(value));
 const msecToSec = (msec: string | number) => +msec / 1000;
@@ -244,7 +256,7 @@ export function convertAbility(
     alias = options.alias_name;
   }
 
-  if (+abilityData.ability_id === battleData.attackId && options.name === 'Attack') {
+  if (+abilityData.ability_id === battleData.attackId) {
     return null;
   }
   if (battleData.isAprilFoolId(+abilityData.ability_id)) {
@@ -261,8 +273,7 @@ export function convertAbility(
   );
   const args = getNamedArgs(battleData, actionLookup, +abilityData.action_id, options);
 
-  const enlirAbility = enlir && enlir.abilities && enlir.abilities[id];
-  // FIXME: Implement looking up soul break names from Enlir
+  const enlirSkill = findInEnlir(enlir, id);
 
   const breaksDamageCap = toBool(options.max_damage_threshold_type);
 
@@ -279,7 +290,7 @@ export function convertAbility(
   return {
     school,
     name: options.name.trim(),
-    nameGl: enlirAbility ? enlirAbility.name : null,
+    nameGl: enlirSkill ? enlirSkill.name : null,
     alias: alias ? alias.trim() : alias,
     type: battleData.damageTypeLookup[+abilityData.exercise_type],
     target: battleData.describeTarget(

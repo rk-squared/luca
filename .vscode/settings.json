@@ -14,7 +14,8 @@
         "magicite",
         "sprintf",
         "symlink",
-        "undeads"
+        "undeads",
+        "upgradeable"
     ],
     "editor.formatOnSave": true
 }
