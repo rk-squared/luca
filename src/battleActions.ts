@@ -104,6 +104,10 @@ export function getBattleActionDetails(
   return [action, args || null, details || null];
 }
 
+function deleteAll<T>(set: Set<T>, items: T[]) {
+  items.forEach(i => set.delete(i));
+}
+
 /**
  * Maps from an FFRK options object (with values like arg1, arg2...) to our
  * NamedArgs (which contains the same values, but with meaningful property
@@ -128,7 +132,7 @@ export function getNamedArgs(
 
   // For diagnostics and development, track the set of argument indexes that we
   // haven't used.
-  const unhandledArgs = new Set(_.filter(args.map((value, index) => (value ? index : 0))));
+  const unhandledArgs = new Set<number>(_.filter(args.map((value, index) => (value ? index : 0))));
 
   // Map arguments that are specified in FFRK JS code and that we manually
   // define in our own TS code to match.
@@ -142,9 +146,9 @@ export function getNamedArgs(
       ]),
     ),
   };
-  _.forEach(argSource.args, i => i && unhandledArgs.delete(i));
+  deleteAll(unhandledArgs, _.values(argSource.args));
   if (argSource.multiArgs) {
-    _.forEach(argSource.multiArgs, i => _.forEach(i, j => unhandledArgs.delete(j)));
+    _.forEach(argSource.multiArgs, (i: number[]) => deleteAll(unhandledArgs, i));
   }
 
   // Map arguments that are specified in FFRK actionMap options.
@@ -157,7 +161,7 @@ export function getNamedArgs(
   function tryArgList(key: keyof NamedArgs, argNumbers: number[] | undefined) {
     if (argNumbers && argNumbers.length) {
       result[key] = _.filter(argNumbers.map(i => args[i]));
-      _.forEach(argNumbers, i => unhandledArgs.delete(i));
+      deleteAll(unhandledArgs, argNumbers);
     }
   }
   tryArgList('elements', action.elements && action.elements.args);
@@ -173,7 +177,9 @@ export function getNamedArgs(
   // Record unhandled arguments for diagnostic and development purposes.
   if (unhandledArgs.size) {
     const unknown: { [i: number]: number } = {};
-    unhandledArgs.forEach(i => (unknown[i] = args[i]));
+    unhandledArgs.forEach(i => {
+      unknown[i] = args[i];
+    });
     result.unknown = unknown;
   }
 
