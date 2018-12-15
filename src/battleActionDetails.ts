@@ -89,7 +89,7 @@ export interface BattleActionDetails extends BattleActionArgs {
 
 function formatEnlirAttack(battleData: BattleData, options: Options, args: NamedArgs): string {
   const target = battleData.targetRangeLookup[options.target_range];
-  const count = _.upperFirst(converter.toWords(args.barrageNum || 0));
+  const count = _.upperFirst(converter.toWords(args.barrageNum || 1));
   const who = target === 'SELF' || target === 'SINGLE' ? 'single' : 'group';
   const range = args.atkType === battleData.conf.ATK_TYPE.INDIRECT ? 'ranged ' : '';
   const multiplier = toEuroFixed((args.damageFactor || 0) / 100);
@@ -99,6 +99,10 @@ function formatEnlirAttack(battleData: BattleData, options: Options, args: Named
     desc = `${count} ${who} ${range}attack (${multiplier})`;
   } else {
     desc = `${count} ${who} ${range}attacks (${multiplier} each)`;
+  }
+
+  if (options.max_damage_threshold_type && +options.max_damage_threshold_type) {
+    desc += ' capped at 99999';
   }
 
   if (args.forceHit) {
@@ -190,6 +194,17 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
     },
   },
 
+  // This is used for simple single-hit magic attacks, like a magicite's auto-attack.
+  MagicAttackAction: {
+    args: {
+      damageFactor: 1,
+      matkElement: 2,
+      minDamageFactor: 3,
+    },
+    multiArgs: {},
+    formatEnlir: formatEnlirAttack,
+  },
+
   MagicAttackMultiAction: {
     formula: 'Magical',
     args: {
@@ -226,7 +241,8 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
     formatEnlir: formatEnlirAttack,
   },
 
-  // This is used for the en-element status's Attack replacement.
+  // This is used for simple single-hit physical attacks, like an en-element status's
+  // Attack replacement.
   PhysicalAttackElementAction: {
     args: {
       damageFactor: 1,
