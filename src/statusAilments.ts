@@ -26,6 +26,14 @@ interface StatusAilment {
 
 interface StatusAilmentDescription {
   isBuff: boolean;
+
+  /**
+   * Is this "neutral"?  Neutral status ailments aren't inherently buffs or
+   * debuffs, so they should be described accordingly where possible.  Stat
+   * changes can be good or bad, so they fall under this category.
+   */
+  isNeutral: boolean;
+
   description: string;
 }
 
@@ -53,11 +61,13 @@ const setterHandlers: StatusAilmentHandler = {
     }
     return {
       isBuff: statusAilment.increaseLevel > 0,
+      isNeutral: false,
       description: `Heavy Charge ${withPlus(statusAilment.increaseLevel)}`,
     };
   },
   setForUnsetHeavyCharge: () => ({
     isBuff: false,
+    isNeutral: false,
     description: 'Heavy Charge =0',
   }),
 };
@@ -79,6 +89,14 @@ export function isCommonDebuff(battleData: BattleData, statusAilmentId: number) 
   return isInBundle(battleData, battleData.conf.STATUS_AILMENTS_BUNDLE.DISPEL, statusAilmentId);
 }
 
+export function getStatusVerb({ isBuff, isNeutral }: StatusAilmentDescription) {
+  if (isNeutral) {
+    return '';
+  } else {
+    return isBuff ? 'grants ' : 'causes';
+  }
+}
+
 export function describeStatusAilment(
   battleData: BattleData,
   statusAilmentId: number,
@@ -95,6 +113,7 @@ export function describeStatusAilment(
   // Fall back to default.
   return {
     isBuff: isCommonBuff(battleData, statusAilmentId),
+    isNeutral: false,
     description: _.startCase(_.camelCase(status._name)),
   };
 }

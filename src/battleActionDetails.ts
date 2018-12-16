@@ -3,7 +3,11 @@ import * as converter from 'number-to-words';
 import { BattleActionArgs, BattleData } from './gameData';
 import { logger } from './logger';
 import { Options } from './schemas/get_battle_init_data';
-import { describeStatusAilment, describeStatusAilmentBundle } from './statusAilments';
+import {
+  describeStatusAilment,
+  describeStatusAilmentBundle,
+  getStatusVerb,
+} from './statusAilments';
 import { LangType, toEuroFixed } from './util';
 
 import * as _ from 'lodash';
@@ -51,6 +55,23 @@ export interface NamedArgs {
    */
   isSameTarget?: number;
 
+  statusAilmentsId?: number;
+
+  /**
+   * The duration member of the options object for statusAilmentsId.
+   */
+  statusAilmentsOptionsDuration?: number;
+
+  /**
+   * The value parameter to helpers.makeBoostObject
+   */
+  statusAilmentsBoostValue?: number;
+
+  /**
+   * The isAbsolute parameter to helpers.makeBoostObject
+   */
+  statusAilmentsBoostIsAbsolute?: number;
+
   /**
    * A status ailment ID or status ailment bundle ID (see
    * StatusAilmentsConfig.getBundle) for a status applied to self.
@@ -62,6 +83,13 @@ export interface NamedArgs {
    */
   selfSaId?: number;
 
+  optionalSelfSaId?: number;
+
+  /**
+   * The duration member of the options object for self status ailments.
+   */
+  saSelfOptionsDuration?: number;
+
   /**
    * Also called hasSelfSaAnimation.
    */
@@ -72,8 +100,24 @@ export interface NamedArgs {
   unsetSaId?: number[];
   unsetSaBundle?: number[];
 
+  /**
+   * Percentage for stat boosts.  These are martialled by action class code in
+   * battle.js and merged with the boosts array of the status ailment
+   * definition, which provides additional details (such as *which* stats are
+   * boosted).
+   */
+  boostsRate?: number[];
+
   damageCalculateParamAdjust?: number;
   damageCalculateParamAdjustConf?: number[];
+
+  wrappedAbilityId?: number;
+
+  /**
+   * For trance actions (burst soul breaks) and brave soul breaks, these
+   * specify which UI panels are swapped out (I think).
+   */
+  spareReceptorIds?: number[];
 
   /**
    * For diagnostic/debugging purposes, we support tracking unknown arguments.
@@ -130,10 +174,19 @@ function formatEnlirAttack(battleData: BattleData, options: Options, args: Named
 
 function formatEnlirHeal(battleData: BattleData, options: Options, args: NamedArgs): string {
   let result = 'Restores HP';
+
   if (args.factor) {
     result += ` (${args.factor})`;
   }
-  result += ', damages undeads';
+
+  // Hack: Enlir displays "damages undeads" for abilities and burst commands
+  // but not soul breaks.  We don't have direct access to whether these options
+  // plus args are an ability or soul break, but checking whether it can be
+  // countered seems to be a reliable indication.
+  if (options.counter_enable && +options.counter_enable) {
+    result += ', damages undeads';
+  }
+
   return result;
 }
 
@@ -144,7 +197,7 @@ function formatSelfStatus(battleData: BattleData, args: NamedArgs): string {
     logger.warn(`Unknown status ID ${statusId}`);
     return 'grants unknown status to the user';
   } else {
-    return (status.isBuff ? 'grants' : 'causes') + ` ${status.description} to the user`;
+    return `${getStatusVerb(status)}${status.description} to the user`;
   }
 }
 
@@ -177,6 +230,25 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
       damageFactor: 3,
     },
     formatEnlir: formatEnlirHeal,
+  },
+
+  HealHpAndCustomParamAction: {
+    args: {
+      factor: 1,
+      matkElement: 2,
+      damageFactor: 3,
+      statusAilmentsBoostIsAbsolute: 6,
+      statusAilmentsOptionsDuration: 5,
+      statusAilmentsBoostValue: 4,
+    },
+    multiArgs: {},
+    formatEnlir(battleData: BattleData, options: Options, args: NamedArgs): string {
+      return (
+        formatEnlirHeal(battleData, options, args) +
+        ', ' +
+        formatStatuses(battleData, [+options.status_ailments_id])
+      );
+    },
   },
 
   HealHpAndHealSaAction: {
@@ -357,4 +429,16 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
     },
     formatEnlir: formatEnlirAttack,
   },
+
+  // TranceAction: {
+  //   args: {
+  //     wrappedAbilityId: 1,
+  //     optionalSelfSaId: 9,
+  //     saSelfOptionsDuration: 6,
+  //   },
+  //   multiArgs: {
+  //     spareReceptorIds: [3, 5],
+  //     boostsRate: [7, 7, 7, 7, 7, 7, 7, 8],
+  //   },
+  // },
 };

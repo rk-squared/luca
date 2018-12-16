@@ -27,6 +27,8 @@ Object {
   "nameGl": null,
   "sb": 75,
   "school": "Darkness",
+  "statusAilmentsFactor": 0,
+  "statusAilmentsId": 0,
   "target": "Single enemy",
   "time": 1.65,
   "type": "PHY",

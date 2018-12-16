@@ -155,14 +155,22 @@ function makeBattleDataHelpers(lang: LangType) {
     ): string | null {
       const range = result.targetRangeLookup[rangeValue];
       const segment = result.targetSegmentLookup[segmentValue];
+      const activeMethod = activeTargetMethodValue
+        ? result.activeTargetMethodLookup[activeTargetMethodValue]
+        : null;
+      // This function is ugly - I'm still unclear on the relationship between
+      // target segment and active target method.  For example, Ultra Cure gives
+      // a segment of colleague, but its active target method allows it to
+      // target enemies.
       if (range === 'SELF') {
         return 'Self';
-      } else if (
-        range === 'SINGLE' &&
-        segment === 'OPPONENT' &&
-        activeTargetMethodValue != null &&
-        result.activeTargetMethodLookup[activeTargetMethodValue] === 'BOTH_DISABLE'
-      ) {
+      } else if (range === 'SINGLE' && activeMethod && activeMethod !== 'BOTH_DISABLE') {
+        return activeMethod === 'BOTH_ENABLE'
+          ? 'Single'
+          : activeMethod === 'OPPONENT_DISABLE'
+          ? 'Single ally'
+          : 'Single enemy';
+      } else if (range === 'SINGLE' && segment === 'OPPONENT' && activeMethod === 'BOTH_DISABLE') {
         return 'Random enemies';
       } else if (targetLookup[range]) {
         const lookupResult = targetLookup[range][segment];
@@ -212,8 +220,8 @@ export interface BattleActionArgs {
 type BattleDataHelpers = ReturnType<typeof makeBattleDataHelpers>;
 export type BattleData = BattleDataType &
   BattleDataHelpers & {
-  battleActionArgs: { [actionName: string]: BattleActionArgs };
-};
+    battleActionArgs: { [actionName: string]: BattleActionArgs };
+  };
 
 export const battleData: { [lang in LangType]: BattleData } = {
   [LangType.Gl]: {

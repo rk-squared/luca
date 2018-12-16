@@ -158,11 +158,24 @@ export function getNamedArgs(
       unhandledArgs.delete(argNumber);
     }
   }
-  function tryArgList(key: keyof NamedArgs, argNumbers: number[] | undefined) {
-    if (argNumbers && argNumbers.length) {
-      result[key] = _.filter(argNumbers.map(i => args[i]));
-      deleteAll(unhandledArgs, argNumbers);
+  function tryArgList(key: keyof NamedArgs, argNumbers: Array<number | string> | undefined) {
+    if (!argNumbers || !argNumbers.length) {
+      return;
     }
+
+    // Action maps typically express arguments as integers, but some (like
+    // TranceAction) instead have parameters like `burstAbilityArgs: ["arg2", "arg4"]`.
+    const cleanedArgNumbers = argNumbers.map((i: number | string) => {
+      if (typeof i === 'number') {
+        return i;
+      } else {
+        const match = i.match(/^arg(\d+)$/);
+        return match ? +match[1] : 0;
+      }
+    });
+
+    result[key] = _.filter(cleanedArgNumbers.map(i => args[i]));
+    deleteAll(unhandledArgs, cleanedArgNumbers);
   }
   tryArgList('elements', action.elements && action.elements.args);
   tryArg('ignoresReflection', action.ignoresReflectionArg);
@@ -314,6 +327,8 @@ export function convertAbility(
     ),
     sb: options.ss_point == null ? null : +options.ss_point,
     breaksDamageCap,
+    statusAilmentsId: +options.status_ailments_id,
+    statusAilmentsFactor: +options.status_ailments_factor,
     id,
     action: action ? action.className : null,
     args: getNamedArgs(battleData, actionLookup, +abilityData.action_id, options),
