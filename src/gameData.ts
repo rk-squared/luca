@@ -1,5 +1,5 @@
 import * as _ from 'lodash';
-import { sprintf } from 'sprintf-js';
+import { vsprintf } from 'sprintf-js';
 
 import { NamedArgs } from './battleActionDetails';
 import { LangType } from './util';
@@ -110,7 +110,7 @@ const targetMethodDescription: { [targetMethod: string]: string | null } = {
   MP_RANDOM: '%s',
 
   // Used by, e.g., Porom's Curaise BSB CMD1
-  MARAISE: 'Ally with %s or lowest HP%% %s',
+  MARAISE: '%1$s with KO or lowest HP%% %1$s',
 
   // Unconfirmed
   LOT_BY_HP_RATE: 'Highest HP%% %s',
@@ -194,7 +194,9 @@ function makeBattleDataHelpers(lang: LangType) {
         return result.describeTarget(rangeValue, segmentValue, activeTargetMethodValue);
       } else {
         const lookupResult = targetLookup[range][segment];
-        return lookupResult ? sprintf(methodDescription, lookupResult[1]).trim() : null;
+        return lookupResult
+          ? _.upperFirst(vsprintf(methodDescription, [lookupResult[1]])).trim()
+          : null;
       }
     },
   };

@@ -1,11 +1,15 @@
 {
     "cSpell.words": [
         "Debuff",
+        "Decil",
         "Enlir",
         "FFRK",
         "FFRK's",
         "Grimoire",
         "Luca",
+        "Mysidia's",
+        "Porom",
+        "Porom's",
         "blitzball",
         "cooldown",
         "debuffs",
@@ -18,7 +22,8 @@
         "sprintf",
         "symlink",
         "undeads",
-        "upgradeable"
+        "upgradeable",
+        "vsprintf"
     ],
     "editor.formatOnSave": true
 }
