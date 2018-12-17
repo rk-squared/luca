@@ -158,7 +158,7 @@ function formatEnlirAttack(battleData: BattleData, options: Options, args: Named
 
   if (options.status_ailments_id && options.status_ailments_id !== '0') {
     const statusId = +options.status_ailments_id;
-    const status = describeStatusAilment(battleData, statusId);
+    const status = describeStatusAilment(battleData, statusId, args);
     let statusName: string;
     if (!status) {
       logger.warn(`Unknown status ID ${statusId}`);
@@ -192,7 +192,7 @@ function formatEnlirHeal(battleData: BattleData, options: Options, args: NamedAr
 
 function formatSelfStatus(battleData: BattleData, args: NamedArgs): string {
   const statusId = args.selfSaId as number;
-  const status = describeStatusAilment(battleData, statusId);
+  const status = describeStatusAilment(battleData, statusId, args);
   if (!status) {
     logger.warn(`Unknown status ID ${statusId}`);
     return 'grants unknown status to the user';
@@ -205,10 +205,13 @@ function formatStatuses(
   battleData: BattleData,
   statusAilmentIds?: number[],
   bundleIds?: number[],
+  args?: NamedArgs,
 ): string {
   return _.filter(
     _.flatten([
-      (statusAilmentIds || []).map(i => _.get(describeStatusAilment(battleData, i), 'description')),
+      (statusAilmentIds || []).map(i =>
+        _.get(describeStatusAilment(battleData, i, args), 'description'),
+      ),
       (bundleIds || []).map(i => _.get(describeStatusAilmentBundle(battleData, i), 'description')),
     ]),
   ).join(', ');
@@ -246,7 +249,7 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
       return (
         formatEnlirHeal(battleData, options, args) +
         ', ' +
-        formatStatuses(battleData, [+options.status_ailments_id])
+        formatStatuses(battleData, [+options.status_ailments_id], [], args)
       );
     },
   },

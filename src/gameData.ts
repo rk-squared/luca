@@ -68,9 +68,17 @@ export enum ElementType {
   NE = 199,
 }
 
+const statAlias: { [key: string]: string } = {
+  matk: 'mag',
+  mdef: 'res',
+};
+
 const schoolAlias: { [key: string]: string } = {
   SHOOTER: 'Sharpshooter',
 };
+
+export const getStatName = (stat: string): string =>
+  _.upperCase(statAlias[_.lowerCase(stat)] || stat);
 
 /**
  * Maps target_range + target_segment values to [full description, noun]
