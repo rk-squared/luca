@@ -19,7 +19,7 @@ node dist/download-game-js.js
 
 # Download FFRK Community Spreadsheet data.  Luca uses this to help annotate
 # the data that it's mining.
-node dist/download-enlir.js --no-download --output-directory=src/enlir
+node dist/download-enlir.js --output-directory=src/enlir
 
 # Process constants from battle.js.  This creates battle.json under src/gl and
 # src/jp, which you can use for # further processing.

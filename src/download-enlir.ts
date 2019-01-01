@@ -526,14 +526,17 @@ const argv = yargs
   .option('download', {
     alias: 'd',
     default: true,
+    description: 'Download latest. Use --no-download to only convert previous downloaded data.',
   })
   .option('sheet', {
     default: 'community',
     choices: Object.keys(enlirSpreadsheetIds),
+    description: 'Sheets to download: original Enlir data or new Community sheet.',
   })
   .option('output-directory', {
-    default: '.',
+    alias: 'o',
     description: 'output directory',
+    demandOption: true,
   }).argv;
 
 async function loadEnlirCredentials() {
