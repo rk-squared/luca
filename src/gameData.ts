@@ -21,6 +21,7 @@ interface BattleDataType {
   };
   env: {};
   extra: {
+    battleConfig: any;
     statusAilments: any;
     statusAilmentBundles: any;
   };

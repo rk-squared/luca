@@ -189,11 +189,19 @@ function convertBattleJs(lang: LangType) {
   gameModules.get('scenes/battle/StatusAilmentsConfig');
   // console.log(FF.ns.battle.StatusAilmentsConfig);
 
+  // FF.ns.battle.Config is unique: Instead of directly exporting a config
+  // object, it has a "get" method that checks different objects depending on
+  // whether it's an "MO" (multiplayer) or normal game.  For our purposes, it
+  // works better to export the normal game constants.
+  FF.extra.battleConfig = FF.ns.battle.Config.getInstance().getForNormalConfig();
+
   FF.extra.statusAilments = getAllStatusAilments();
   FF.extra.statusAilmentBundles = getAllStatusAilmentBundles();
 
   fs.ensureDirSync(path.join(srcPath, lang));
-  fs.writeFileSync(path.join(srcPath, lang, 'battle.json'), JSON.stringify(FF, null, 2));
+  const battleJsonPath = path.join(srcPath, lang, 'battle.json');
+  fs.writeFileSync(battleJsonPath, JSON.stringify(FF, null, 2));
+  logger.info(`Wrote ${battleJsonPath}`);
 }
 
 if (require.main === module) {

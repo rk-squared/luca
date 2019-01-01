@@ -11,6 +11,9 @@ import {
 
 import * as _ from 'lodash';
 
+/**
+ * An actionMap item from battle.js's scenes/battle/AbilityFactory module.
+ */
 interface ActionMapItem {
   actionId: number;
   className: string;
@@ -41,6 +44,7 @@ interface ActionMapItem {
   ignoresReflectionArg?: number;
   ignoresStatusAilmentsBarrierArg?: number;
   burstAbilityArgs?: number[];
+  isFlightAttack?: boolean;
 }
 
 interface ActionLookup {
@@ -108,6 +112,13 @@ function deleteAll<T>(set: Set<T>, items: T[]) {
   items.forEach(i => set.delete(i));
 }
 
+function isFlightAttack(battleData: BattleData, abilityId: number, action: ActionMapItem): boolean {
+  return (
+    action.isFlightAttack ||
+    battleData.extra.battleConfig.ExceptionalFlightAttackIds.indexOf(abilityId) !== -1
+  );
+}
+
 /**
  * Maps from an FFRK options object (with values like arg1, arg2...) to our
  * NamedArgs (which contains the same values, but with meaningful property
@@ -117,6 +128,7 @@ export function getNamedArgs(
   battleData: BattleData,
   actionLookup: ActionLookup,
   actionId: number,
+  abilityId: number,
   options: Options,
 ): NamedArgs | null {
   const [action, actionArgs, details] = getBattleActionDetails(battleData, actionLookup, actionId);
@@ -186,6 +198,12 @@ export function getNamedArgs(
   tryArgList('setSaBundle', action.setSa && action.setSa.bundleArgs);
   tryArgList('unsetSaId', action.unsetSa && action.unsetSa.args);
   tryArgList('unsetSaBundle', action.unsetSa && action.unsetSa.bundleArgs);
+
+  // Map special cases.
+  const isFlightAttackResult = isFlightAttack(battleData, abilityId, action);
+  if (isFlightAttackResult) {
+    result.isFlightAttack = isFlightAttackResult;
+  }
 
   // Record unhandled arguments for diagnostic and development purposes.
   if (unhandledArgs.size) {
@@ -286,7 +304,13 @@ export function convertAbility(
     actionLookup,
     +abilityData.action_id,
   );
-  const args = getNamedArgs(battleData, actionLookup, +abilityData.action_id, options);
+  const args = getNamedArgs(
+    battleData,
+    actionLookup,
+    +abilityData.action_id,
+    +abilityData.ability_id,
+    options,
+  );
 
   const enlirSkill = findInEnlir(enlir, id);
 
@@ -331,6 +355,6 @@ export function convertAbility(
     statusAilmentsFactor: +options.status_ailments_factor,
     id,
     action: action ? action.className : null,
-    args: getNamedArgs(battleData, actionLookup, +abilityData.action_id, options),
+    args,
   };
 }

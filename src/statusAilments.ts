@@ -142,7 +142,7 @@ export function getStatusVerb({ isBuff, isNeutral }: StatusAilmentDescription) {
   if (isNeutral) {
     return '';
   } else {
-    return isBuff ? 'grants ' : 'causes';
+    return isBuff ? 'grants ' : 'causes ';
   }
 }
 

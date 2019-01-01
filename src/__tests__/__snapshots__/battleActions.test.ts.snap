@@ -34,3 +34,43 @@ Object {
   "type": "PHY",
 }
 `;
+
+exports[`battleActions convertAbility converts soul break jump attacks 1`] = `
+Object {
+  "action": "PhysicalAttackMultiAction",
+  "alias": null,
+  "args": Object {
+    "atkElement": 102,
+    "atkExponentialFactor": 0,
+    "atkType": 2,
+    "barrageNum": 22,
+    "critical": 0,
+    "damageCalculateParamAdjust": 0,
+    "damageCalculateParamAdjustConf": Array [],
+    "damageCalculateTypeByAbility": 0,
+    "damageFactor": 36,
+    "forceHit": 1,
+    "ignoresMirageAndMightyGuard": 0,
+    "isFlightAttack": true,
+    "isSameTarget": 1,
+    "situationalRecalculateDamageHookType": 0,
+  },
+  "autoTarget": "Lowest HP% enemy",
+  "breaksDamageCap": false,
+  "counter": false,
+  "effects": "Twenty-two single ranged jump attacks (0,36 each)",
+  "element": "Lightning",
+  "formula": undefined,
+  "id": 30544011,
+  "multiplier": 7.92,
+  "name": "Impulse Drive",
+  "nameGl": null,
+  "sb": 0,
+  "school": "Combat",
+  "statusAilmentsFactor": 100,
+  "statusAilmentsId": 0,
+  "target": "Single enemy",
+  "time": 2.5,
+  "type": "PHY",
+}
+`;

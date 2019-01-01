@@ -55,6 +55,13 @@ export interface NamedArgs {
    */
   isSameTarget?: number;
 
+  /**
+   * Is this a jump attack?  Unlike most named arguments, this is either copied
+   * from an ActionMapItem's isFlightAttack property or special-cased using the
+   * ExceptionalFlightAttackIds configuration setting.
+   */
+  isFlightAttack?: boolean;
+
   statusAilmentsId?: number;
 
   /**
@@ -131,25 +138,38 @@ export interface BattleActionDetails extends BattleActionArgs {
   formatEnlir: (battleData: BattleData, options: Options, args: NamedArgs) => string;
 }
 
+/**
+ * Checks whether the given ability is part of a soul break.  Enlir
+ * omits certain details (like "damages undeads" or "100% hit rate") for
+ * soul breaks.
+ */
+function isSoulBreak(options: Options, args: NamedArgs): boolean {
+  // Hack: We don't have direct access to whether options plus args are an
+  // ability or soul break, but checking whether it can be countered seems to
+  // be a reliable indication.
+  return !(options.counter_enable && +options.counter_enable);
+}
+
 function formatEnlirAttack(battleData: BattleData, options: Options, args: NamedArgs): string {
   const target = battleData.targetRangeLookup[options.target_range];
   const count = _.upperFirst(converter.toWords(args.barrageNum || 1));
   const who = target === 'SELF' || target === 'SINGLE' ? 'single' : 'group';
   const range = args.atkType === battleData.conf.ATK_TYPE.INDIRECT ? 'ranged ' : '';
+  const jump = args.isFlightAttack ? 'jump ' : '';
   const multiplier = toEuroFixed((args.damageFactor || 0) / 100);
 
-  let desc;
+  let desc = `${count} ${who} ${range}${jump}`;
   if (!args.barrageNum || args.barrageNum === 1) {
-    desc = `${count} ${who} ${range}attack (${multiplier})`;
+    desc += `attack (${multiplier})`;
   } else {
-    desc = `${count} ${who} ${range}attacks (${multiplier} each)`;
+    desc += `attacks (${multiplier} each)`;
   }
 
   if (options.max_damage_threshold_type && +options.max_damage_threshold_type) {
     desc += ' capped at 99999';
   }
 
-  if (args.forceHit) {
+  if (args.forceHit && !isSoulBreak(options, args)) {
     desc += ', 100% hit rate';
   }
   if (args.critical) {
@@ -179,11 +199,9 @@ function formatEnlirHeal(battleData: BattleData, options: Options, args: NamedAr
     result += ` (${args.factor})`;
   }
 
-  // Hack: Enlir displays "damages undeads" for abilities and burst commands
-  // but not soul breaks.  We don't have direct access to whether these options
-  // plus args are an ability or soul break, but checking whether it can be
-  // countered seems to be a reliable indication.
-  if (options.counter_enable && +options.counter_enable) {
+  // Enlir displays "damages undeads" for abilities and burst commands but not
+  // soul breaks.
+  if (!isSoulBreak(options, args)) {
     result += ', damages undeads';
   }
 
