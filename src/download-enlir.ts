@@ -32,7 +32,7 @@ function questionAsync(r: readline.ReadLine, query: string): Promise<string> {
 const workPath = path.join(__dirname, '..', 'tmp');
 fs.ensureDirSync(workPath);
 
-// The file token.json stores the user's access and refresh tokens, and is
+// The file token.json stores the user's access and refresh tokens.  It's
 // created automatically when the authorization flow completes for the first
 // time.
 const tokenPath = path.join(workPath, 'token.json');
@@ -147,6 +147,8 @@ const skillFields: { [col: string]: (value: string) => any } = {
   Points: toInt,
 };
 
+// The '✓' column indicates whether a row has been confirmed (e.g., verified
+// via data mining, instead of just being written up from descriptions).
 const shouldAlwaysSkip = (col: string) => col === '✓' || col === 'Img';
 
 function convertAbilities(rows: any[]): any[] {
