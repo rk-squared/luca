@@ -6,7 +6,7 @@ const stripBom = require('strip-bom');
 
 import { convertAbility } from './battleActions';
 import { tryLoadAll } from './enlirData';
-import { battleData } from './gameData';
+import { battleData } from './gameData/battleData';
 import { logger } from './logger';
 import { Buddy, GetBattleInitData, Supporter } from './schemas/get_battle_init_data';
 import { LangType } from './util';

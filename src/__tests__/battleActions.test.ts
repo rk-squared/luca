@@ -1,5 +1,5 @@
 import { convertAbility } from '../battleActions';
-import { battleData } from '../gameData';
+import { battleData } from '../gameData/battleData';
 import { LangType } from '../util';
 
 describe('battleActions', () => {

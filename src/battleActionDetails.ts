@@ -1,7 +1,9 @@
 import * as converter from 'number-to-words';
 
-import { BattleActionArgs, BattleData } from './gameData';
+import { ActionLookup, ActionMapItem } from './gameData/actionMap';
+import { BattleActionArgs, BattleData } from './gameData/battleData';
 import { logger } from './logger';
+import { NamedArgs } from './namedArgs';
 import { Options } from './schemas/get_battle_init_data';
 import {
   describeStatusAilment,
@@ -11,126 +13,6 @@ import {
 import { LangType, toEuroFixed } from './util';
 
 import * as _ from 'lodash';
-
-export interface NamedArgs {
-  damageFactor?: number;
-  barrageNum?: number;
-  atkType?: number;
-  forceHit?: number;
-  healHpFactor?: number;
-  barterRate?: number;
-  selfSaOptionsDuration?: number;
-  ignoresAttackHit?: number;
-  elements?: number[];
-  critical?: number;
-  criticalCoefficient?: number;
-  minDamageFactor?: number;
-  situationalRecalculateDamageHookType?: number;
-  damageCalculateTypeByAbility?: number;
-  ignoresReflection?: number;
-  ignoresMirageAndMightyGuard?: number;
-  ignoresStatusAilmentsBarrier?: number;
-  burstAbility?: number[];
-
-  atkExponentialFactor?: number;
-  matkExponentialFactor?: number;
-
-  /**
-   * Single physical element.  The elements array is more flexible.
-   */
-  atkElement?: number;
-
-  /**
-   * Single magical element.  The elements array is more flexible.
-   */
-  matkElement?: number;
-
-  /**
-   * Healing factor.
-   */
-  factor?: number;
-
-  /**
-   * If true, then each hit is done against the same target.
-   */
-  isSameTarget?: number;
-
-  /**
-   * Is this a jump attack?  Unlike most named arguments, this is either copied
-   * from an ActionMapItem's isFlightAttack property or special-cased using the
-   * ExceptionalFlightAttackIds configuration setting.
-   */
-  isFlightAttack?: boolean;
-
-  statusAilmentsId?: number;
-
-  /**
-   * The duration member of the options object for statusAilmentsId.
-   */
-  statusAilmentsOptionsDuration?: number;
-
-  /**
-   * The value parameter to helpers.makeBoostObject
-   */
-  statusAilmentsBoostValue?: number;
-
-  /**
-   * The isAbsolute parameter to helpers.makeBoostObject
-   */
-  statusAilmentsBoostIsAbsolute?: number;
-
-  /**
-   * A status ailment ID or status ailment bundle ID (see
-   * StatusAilmentsConfig.getBundle) for a status applied to self.
-   */
-  selfSaBundleId?: number;
-
-  /**
-   * A single status ailment ID for a status applied to self.
-   */
-  selfSaId?: number;
-
-  optionalSelfSaId?: number;
-
-  /**
-   * The duration member of the options object for self status ailments.
-   */
-  saSelfOptionsDuration?: number;
-
-  /**
-   * Also called hasSelfSaAnimation.
-   */
-  selfSaAnimationFlag?: number;
-
-  setSaId?: number[];
-  setSaBundle?: number[];
-  unsetSaId?: number[];
-  unsetSaBundle?: number[];
-
-  /**
-   * Percentage for stat boosts.  These are martialled by action class code in
-   * battle.js and merged with the boosts array of the status ailment
-   * definition, which provides additional details (such as *which* stats are
-   * boosted).
-   */
-  boostsRate?: number[];
-
-  damageCalculateParamAdjust?: number;
-  damageCalculateParamAdjustConf?: number[];
-
-  wrappedAbilityId?: number;
-
-  /**
-   * For trance actions (burst soul breaks) and brave soul breaks, these
-   * specify which UI panels are swapped out (I think).
-   */
-  spareReceptorIds?: number[];
-
-  /**
-   * For diagnostic/debugging purposes, we support tracking unknown arguments.
-   */
-  unknown?: { [id: number]: number };
-}
 
 export interface BattleActionDetails extends BattleActionArgs {
   formula?: 'Physical' | 'Magical' | 'Hybrid';
@@ -463,3 +345,28 @@ export const battleActionDetails: { [actionName: string]: BattleActionDetails } 
   //   },
   // },
 };
+
+/**
+ * Gets details about battle actions for the given action ID.
+ *
+ * Returns the following:
+ * - The action name, if known
+ * - The action argument mappings, as automatically extracted from battle.js
+ * - The manually maintained action details, including argument mappings,
+ *   formatters, etc.
+ */
+export function getBattleActionDetails(
+  battleData: BattleData,
+  actionLookup: ActionLookup,
+  actionId: number,
+): [ActionMapItem | null, BattleActionArgs | null, BattleActionDetails | null] {
+  const action = actionLookup[actionId];
+  if (!action) {
+    return [null, null, null];
+  }
+
+  const actionName = action.className;
+  const args = battleData.battleActionArgs[actionName];
+  const details = battleActionDetails[actionName];
+  return [action, args || null, details || null];
+}

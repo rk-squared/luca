@@ -1,6 +1,6 @@
-import { NamedArgs } from './battleActionDetails'; // FIXME: Circular dependency
-import { BattleData, getStatName } from './gameData';
-import { withPlus, commaSeparated } from './util';
+import { BattleData, getStatName } from './gameData/battleData';
+import { NamedArgs } from './namedArgs';
+import { commaSeparated, withPlus } from './util';
 
 import * as _ from 'lodash';
 

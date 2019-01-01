@@ -1,8 +1,8 @@
 import * as _ from 'lodash';
 import { vsprintf } from 'sprintf-js';
 
-import { NamedArgs } from './battleActionDetails';
-import { LangType } from './util';
+import { NamedArgs } from '../namedArgs';
+import { LangType } from '../util';
 
 /**
  * Limited definition of battle.json, which we process from battle.js then add
@@ -28,8 +28,8 @@ interface BattleDataType {
 }
 
 const rawBattleData: { [lang in LangType]: BattleDataType } = {
-  [LangType.Gl]: require('./gl/battle.json'),
-  [LangType.Jp]: require('./jp/battle.json'),
+  [LangType.Gl]: require('../gl/battle.json'),
+  [LangType.Jp]: require('../jp/battle.json'),
 };
 
 function makeLookup<T extends string>(enumType: any) {
@@ -215,7 +215,7 @@ function makeBattleDataHelpers(lang: LangType) {
 
 /**
  * Battle action details as automatically processed from battle.js by
- * get-battle-args.js.  Properly belongs in battleActionDetails.js, but putting
+ * get-battle-args.js.  Properly belongs in namedArgs.js, but putting
  * it here lets us keep all of our JSON data grouped together.
  */
 export interface BattleActionArgs {
@@ -238,11 +238,11 @@ export const battleData: { [lang in LangType]: BattleData } = {
   [LangType.Gl]: {
     ...rawBattleData[LangType.Gl],
     ...makeBattleDataHelpers(LangType.Gl),
-    battleActionArgs: require('./gl/battleArgs.json'),
+    battleActionArgs: require('../gl/battleArgs.json'),
   },
   [LangType.Jp]: {
     ...rawBattleData[LangType.Jp],
     ...makeBattleDataHelpers(LangType.Jp),
-    battleActionArgs: require('./jp/battleArgs.json'),
+    battleActionArgs: require('../jp/battleArgs.json'),
   },
 };
