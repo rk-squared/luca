@@ -539,6 +539,7 @@ const argv = yargs
     demandOption: true,
   }).argv;
 
+// To do: Should we use an API key, rather than OAuth2 credentials, since we're only using public data?
 async function loadEnlirCredentials() {
   const enlirCredentialsFilename = path.resolve(__dirname, '..', 'credentials.json');
   try {

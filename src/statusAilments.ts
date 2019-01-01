@@ -1,6 +1,6 @@
 import { BattleData, getStatName } from './gameData/battleData';
 import { NamedArgs } from './namedArgs';
-import { commaSeparated, withPlus } from './util';
+import { commaSeparated, forceArray, withPlus } from './util';
 
 import * as _ from 'lodash';
 
@@ -8,6 +8,7 @@ interface StatusAilment {
   _name: string;
   isCustomParam?: boolean;
   isPrimitiveParamBoost?: boolean;
+  isChangeFlightDuration?: boolean;
   canNotSetToEnemy?: boolean;
 
   exclusive: {
@@ -40,6 +41,8 @@ interface StatusAilment {
 
   // One-off parameters for individual handler functions.
   increaseLevel?: number;
+  durationTurn?: number;
+  flightDuration?: number;
 }
 
 interface StatusAilmentDescription {
@@ -103,22 +106,50 @@ interface StatusAilmentHandler {
   [functionName: string]: (status: StatusAilment) => StatusAilmentDescription | null;
 }
 
-const setterHandlers: StatusAilmentHandler = {
-  setForIncreaseHeavyChargeLevel: (statusAilment: StatusAilment) => {
-    if (!statusAilment.increaseLevel) {
-      return null;
-    }
-    return {
-      isBuff: statusAilment.increaseLevel > 0,
-      isNeutral: false,
-      description: `Heavy Charge ${withPlus(statusAilment.increaseLevel)}`,
-    };
+const handlers: { [hookName: string]: StatusAilmentHandler } = {
+  entry: {
+    entryChangeFlightDuration: (statusAilment: StatusAilment) => {
+      if (statusAilment.flightDuration !== 10) {
+        // Sanity check - a different flight duration might be, e.g., "Reduced
+        // Air Time", if it were ever used???
+        return null;
+      }
+
+      if (statusAilment.durationTurn) {
+        return {
+          isBuff: true,
+          isNeutral: false,
+          description: `No Air Time ${statusAilment.durationTurn}`,
+        };
+      } else if (statusAilment.duration) {
+        return {
+          isBuff: true,
+          isNeutral: false,
+          description: 'No Air Time',
+        };
+      } else {
+        return null;
+      }
+    },
   },
-  setForUnsetHeavyCharge: () => ({
-    isBuff: false,
-    isNeutral: false,
-    description: 'Heavy Charge =0',
-  }),
+
+  set: {
+    setForIncreaseHeavyChargeLevel: (statusAilment: StatusAilment) => {
+      if (!statusAilment.increaseLevel) {
+        return null;
+      }
+      return {
+        isBuff: statusAilment.increaseLevel > 0,
+        isNeutral: false,
+        description: `Heavy Charge ${withPlus(statusAilment.increaseLevel)}`,
+      };
+    },
+    setForUnsetHeavyCharge: () => ({
+      isBuff: false,
+      isNeutral: false,
+      description: 'Heavy Charge =0',
+    }),
+  },
 };
 
 // noinspection SpellCheckingInspection
@@ -162,8 +193,14 @@ export function describeStatusAilment(
     }
   }
 
-  if (status.funcMap.set && setterHandlers[status.funcMap.set]) {
-    return setterHandlers[status.funcMap.set](status);
+  for (var hook of ['set', 'entry']) {
+    if (status.funcMap[hook]) {
+      for (var funcName of forceArray(status.funcMap[hook])) {
+        if (handlers[hook][funcName]) {
+          return handlers[hook][funcName](status);
+        }
+      }
+    }
   }
 
   // Fall back to default.

@@ -1,5 +1,81 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`battleActions convertAbility converts PhysicalAttackMultiAndSelfSaAction abilities 1`] = `
+Object {
+  "action": "PhysicalAttackMultiAndSelfSaAction",
+  "alias": null,
+  "args": Object {
+    "atkType": 2,
+    "barrageNum": 3,
+    "critical": 0,
+    "damageCalculateParamAdjust": 0,
+    "damageCalculateParamAdjustConf": Array [],
+    "damageFactor": 70,
+    "elements": Array [
+      102,
+      104,
+    ],
+    "forceHit": 0,
+    "ignoresAttackHit": 1,
+    "isSameTarget": 1,
+    "selfSaAnimationFlag": 1,
+    "selfSaId": 257,
+    "selfSaOptionsDuration": 0,
+  },
+  "autoTarget": "Lowest HP% enemy",
+  "breaksDamageCap": false,
+  "counter": true,
+  "effects": "Three single ranged attacks (0,70 each), grants No Air Time 2 to the user",
+  "element": "Lightning, Wind",
+  "formula": "Physical",
+  "id": 30181131,
+  "multiplier": 2.1,
+  "name": "Cyclone Bolt",
+  "nameGl": null,
+  "sb": 75,
+  "school": "Dragoon",
+  "statusAilmentsFactor": 0,
+  "statusAilmentsId": 0,
+  "target": "Single enemy",
+  "time": 1.5,
+  "type": "PHY",
+}
+`;
+
+exports[`battleActions convertAbility converts abilities that remove status ailments 1`] = `
+Object {
+  "action": "HealHpAndHealSaAction",
+  "alias": null,
+  "args": Object {
+    "damageFactor": 400,
+    "factor": 105,
+    "ignoresReflection": 0,
+    "matkElement": 106,
+    "unsetSaBundle": Array [
+      2,
+    ],
+    "unsetSaId": Array [],
+  },
+  "autoTarget": "Lowest HP% ally",
+  "breaksDamageCap": false,
+  "counter": true,
+  "effects": "Restores HP (105), damages undeads, removes negative effects",
+  "element": "Holy",
+  "formula": "Magical",
+  "id": 30121291,
+  "multiplier": 4,
+  "name": "Ultra Cure",
+  "nameGl": null,
+  "sb": 85,
+  "school": "White Magic",
+  "statusAilmentsFactor": 0,
+  "statusAilmentsId": 0,
+  "target": "Single",
+  "time": 1.5,
+  "type": "WHT",
+}
+`;
+
 exports[`battleActions convertAbility converts simple character abilities 1`] = `
 Object {
   "action": "PhysicalAttackMultiAndHealHpByHitDamageAction",

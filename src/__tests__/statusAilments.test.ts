@@ -1,4 +1,7 @@
-import { statusHandlers } from '../statusAilments';
+import { describeStatusAilment, statusHandlers } from '../statusAilments';
+
+import { battleData } from '../gameData/battleData';
+import { LangType } from '../util';
 
 describe('statusAilments', () => {
   it('handles stat buffs and debuffs', () => {
@@ -35,5 +38,18 @@ describe('statusAilments', () => {
       },
     };
     expect(statusHandlers.genericStatBuff.isMatch(status)).toStrictEqual(true);
+  });
+
+  it('handles Heavy Charge', () => {
+    expect(describeStatusAilment(battleData[LangType.Gl], 50110)).toEqual({
+      isBuff: true,
+      isNeutral: false,
+      description: 'Heavy Charge +1',
+    });
+    expect(describeStatusAilment(battleData[LangType.Gl], 50112)).toEqual({
+      isBuff: false,
+      isNeutral: false,
+      description: 'Heavy Charge =0',
+    });
   });
 });

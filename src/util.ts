@@ -14,3 +14,7 @@ export const commaSeparated = (parts: string[]) => {
     return parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1];
   }
 };
+
+export function forceArray<T>(value: T | T[]): T[] {
+  return Array.isArray(value) ? value : [value];
+}
