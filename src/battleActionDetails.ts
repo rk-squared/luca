@@ -6,8 +6,8 @@ import { logger } from './logger';
 import { NamedArgs } from './namedArgs';
 import { Options } from './schemas/get_battle_init_data';
 import {
-  describeStatusAilment,
-  describeStatusAilmentBundle,
+  getStatusAilmentBundleDetails,
+  getStatusAilmentDetails,
   getStatusVerb,
 } from './statusAilments';
 import { LangType, toEuroFixed } from './util';
@@ -60,7 +60,7 @@ function formatEnlirAttack(battleData: BattleData, options: Options, args: Named
 
   if (options.status_ailments_id && options.status_ailments_id !== '0') {
     const statusId = +options.status_ailments_id;
-    const status = describeStatusAilment(battleData, statusId, args);
+    const status = getStatusAilmentDetails(battleData, statusId, args);
     let statusName: string;
     if (!status) {
       logger.warn(`Unknown status ID ${statusId}`);
@@ -92,7 +92,7 @@ function formatEnlirHeal(battleData: BattleData, options: Options, args: NamedAr
 
 function formatSelfStatus(battleData: BattleData, args: NamedArgs): string {
   const statusId = args.selfSaId as number;
-  const status = describeStatusAilment(battleData, statusId, args);
+  const status = getStatusAilmentDetails(battleData, statusId, args);
   if (!status) {
     logger.warn(`Unknown status ID ${statusId}`);
     return 'grants unknown status to the user';
@@ -110,9 +110,11 @@ function formatStatuses(
   return _.filter(
     _.flatten([
       (statusAilmentIds || []).map(i =>
-        _.get(describeStatusAilment(battleData, i, args), 'description'),
+        _.get(getStatusAilmentDetails(battleData, i, args), 'description'),
       ),
-      (bundleIds || []).map(i => _.get(describeStatusAilmentBundle(battleData, i), 'description')),
+      (bundleIds || []).map(i =>
+        _.get(getStatusAilmentBundleDetails(battleData, i), 'description'),
+      ),
     ]),
   ).join(', ');
 }

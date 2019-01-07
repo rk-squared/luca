@@ -63,7 +63,7 @@ export enum EnlirStatusVerb {
  * Information about a status ailment within Luca, including what's needed to
  * format it as text
  */
-interface StatusAilmentDescription {
+interface StatusAilmentDetails {
   verb: EnlirStatusVerb;
 
   duration?: number;
@@ -71,7 +71,7 @@ interface StatusAilmentDescription {
   description: string;
 }
 
-interface StatusAilmentBundleDescription {
+interface StatusAilmentBundleDetails {
   description: string;
   statusAilmentIds: number[];
 }
@@ -89,7 +89,7 @@ interface StatusHandlerType {
     status: StatusAilment,
     args?: NamedArgs,
     options?: StatusAilmentOptions,
-  ) => StatusAilmentDescription;
+  ) => StatusAilmentDetails;
 }
 
 export const statusHandlers: { [key: string]: StatusHandlerType } = {
@@ -124,7 +124,7 @@ export const statusHandlers: { [key: string]: StatusHandlerType } = {
  * internal status names.  This interface provides mappings to let us do that.
  */
 interface StatusAilmentHandler {
-  [functionName: string]: (status: StatusAilment) => StatusAilmentDescription | null;
+  [functionName: string]: (status: StatusAilment) => StatusAilmentDetails | null;
 }
 
 const handlers: { [hookName in keyof StatusAilment['funcMap']]: StatusAilmentHandler } = {
@@ -186,7 +186,7 @@ export function isCommonDebuff(battleData: BattleData, statusAilmentId: number) 
   return isInBundle(battleData, battleData.conf.STATUS_AILMENTS_BUNDLE.DISPEL, statusAilmentId);
 }
 
-export function getStatusVerb({ verb }: StatusAilmentDescription) {
+export function getStatusVerb({ verb }: StatusAilmentDetails) {
   return verb === EnlirStatusVerb.GRANTS
     ? 'grants '
     : verb === EnlirStatusVerb.CAUSES
@@ -194,13 +194,13 @@ export function getStatusVerb({ verb }: StatusAilmentDescription) {
     : '';
 }
 
-function describeStatusAilmentImpl(
+function getStatusAilmentDetailsImpl(
   battleData: BattleData,
   statusAilmentId: number,
   status: StatusAilment,
   args?: NamedArgs,
   options?: StatusAilmentOptions,
-): StatusAilmentDescription | null {
+): StatusAilmentDetails | null {
   if (!status) {
     return null;
   }
@@ -212,11 +212,11 @@ function describeStatusAilmentImpl(
   }
 
   const checkHooks: Array<keyof StatusAilment['funcMap']> = ['set', 'entry'];
-  for (let hook of checkHooks) {
+  for (const hook of checkHooks) {
     const handler = handlers[hook];
     const funcNames = status.funcMap[hook];
     if (handler != null && funcNames != null) {
-      for (let funcName of forceArray(funcNames)) {
+      for (const funcName of forceArray(funcNames)) {
         if (handler[funcName]) {
           return handler[funcName](status);
         }
@@ -233,24 +233,24 @@ function describeStatusAilmentImpl(
   };
 }
 
-export function describeStatusAilment(
+export function getStatusAilmentDetails(
   battleData: BattleData,
   statusAilmentId: number,
   args?: NamedArgs,
   options?: StatusAilmentOptions,
-): StatusAilmentDescription | null {
+): StatusAilmentDetails | null {
   const status = battleData.extra.statusAilments[statusAilmentId];
-  const result = describeStatusAilmentImpl(battleData, statusAilmentId, status, args, options);
+  const result = getStatusAilmentDetailsImpl(battleData, statusAilmentId, status, args, options);
   if (result && options && options.duration) {
     result.duration = options.duration;
   }
   return result;
 }
 
-export function describeStatusAilmentBundle(
+export function getStatusAilmentBundleDetails(
   battleData: BattleData,
   bundleId: number,
-): StatusAilmentBundleDescription | null {
+): StatusAilmentBundleDetails | null {
   const bundle = battleData.extra.statusAilmentBundles[bundleId];
   if (!bundle) {
     return null;
