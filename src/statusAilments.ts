@@ -37,9 +37,10 @@ interface StatusAilment {
   }>;
 
   funcMap: {
-    update?: string;
-    abilityDoneHook?: string;
-    set?: string;
+    entry?: string | string[];
+    update?: string | string[];
+    abilityDoneHook?: string | string[];
+    set?: string | string[];
   };
 
   // One-off parameters for individual handler functions.
@@ -75,9 +76,20 @@ interface StatusAilmentBundleDescription {
   statusAilmentIds: number[];
 }
 
+/**
+ * Per-action status ailment options as extracted from NamedArgs
+ */
+export interface StatusAilmentOptions {
+  duration?: number;
+}
+
 interface StatusHandlerType {
   isMatch: (status: StatusAilment) => boolean;
-  describe: (status: StatusAilment, args?: NamedArgs) => StatusAilmentDescription;
+  describe: (
+    status: StatusAilment,
+    args?: NamedArgs,
+    options?: StatusAilmentOptions,
+  ) => StatusAilmentDescription;
 }
 
 export const statusHandlers: { [key: string]: StatusHandlerType } = {
@@ -115,7 +127,7 @@ interface StatusAilmentHandler {
   [functionName: string]: (status: StatusAilment) => StatusAilmentDescription | null;
 }
 
-const handlers: { [hookName: string]: StatusAilmentHandler } = {
+const handlers: { [hookName in keyof StatusAilment['funcMap']]: StatusAilmentHandler } = {
   entry: {
     entryChangeFlightDuration: (statusAilment: StatusAilment) => {
       if (statusAilment.flightDuration !== 10) {
@@ -182,27 +194,31 @@ export function getStatusVerb({ verb }: StatusAilmentDescription) {
     : '';
 }
 
-export function describeStatusAilment(
+function describeStatusAilmentImpl(
   battleData: BattleData,
   statusAilmentId: number,
+  status: StatusAilment,
   args?: NamedArgs,
+  options?: StatusAilmentOptions,
 ): StatusAilmentDescription | null {
-  const status = battleData.extra.statusAilments[statusAilmentId];
   if (!status) {
     return null;
   }
 
   for (const { isMatch, describe } of _.values(statusHandlers)) {
     if (isMatch(status)) {
-      return describe(status, args);
+      return describe(status, args, options);
     }
   }
 
-  for (var hook of ['set', 'entry']) {
-    if (status.funcMap[hook]) {
-      for (var funcName of forceArray(status.funcMap[hook])) {
-        if (handlers[hook][funcName]) {
-          return handlers[hook][funcName](status);
+  const checkHooks: Array<keyof StatusAilment['funcMap']> = ['set', 'entry'];
+  for (let hook of checkHooks) {
+    const handler = handlers[hook];
+    const funcNames = status.funcMap[hook];
+    if (handler != null && funcNames != null) {
+      for (let funcName of forceArray(funcNames)) {
+        if (handler[funcName]) {
+          return handler[funcName](status);
         }
       }
     }
@@ -215,6 +231,20 @@ export function describeStatusAilment(
       : EnlirStatusVerb.CAUSES,
     description: _.startCase(_.camelCase(status._name)),
   };
+}
+
+export function describeStatusAilment(
+  battleData: BattleData,
+  statusAilmentId: number,
+  args?: NamedArgs,
+  options?: StatusAilmentOptions,
+): StatusAilmentDescription | null {
+  const status = battleData.extra.statusAilments[statusAilmentId];
+  const result = describeStatusAilmentImpl(battleData, statusAilmentId, status, args, options);
+  if (result && options && options.duration) {
+    result.duration = options.duration;
+  }
+  return result;
 }
 
 export function describeStatusAilmentBundle(
