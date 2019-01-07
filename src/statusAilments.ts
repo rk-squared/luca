@@ -4,6 +4,9 @@ import { commaSeparated, forceArray, withPlus } from './util';
 
 import * as _ from 'lodash';
 
+/**
+ * A status ailment as described within FFRK's battle.js
+ */
 interface StatusAilment {
   _name: string;
   isCustomParam?: boolean;
@@ -40,20 +43,27 @@ interface StatusAilment {
   };
 
   // One-off parameters for individual handler functions.
-  increaseLevel?: number;
   durationTurn?: number;
   flightDuration?: number;
+  increaseLevel?: number;
 }
 
-interface StatusAilmentDescription {
-  isBuff: boolean;
+/**
+ * Status verb used by Enlir.  In general, buffs are "grants," debuffs are
+ * "causes," and stat changes don't have a verb.
+ */
+export enum EnlirStatusVerb {
+  GRANTS,
+  CAUSES,
+  NONE,
+}
 
-  /**
-   * Is this "neutral"?  Neutral status ailments aren't inherently buffs or
-   * debuffs, so they should be described accordingly where possible.  Stat
-   * changes can be good or bad, so they fall under this category.
-   */
-  isNeutral: boolean;
+/**
+ * Information about a status ailment within Luca, including what's needed to
+ * format it as text
+ */
+interface StatusAilmentDescription {
+  verb: EnlirStatusVerb;
 
   duration?: number;
 
@@ -86,8 +96,7 @@ export const statusHandlers: { [key: string]: StatusHandlerType } = {
       }
       return {
         description,
-        isBuff: false,
-        isNeutral: true,
+        verb: EnlirStatusVerb.NONE,
         duration: args ? args.statusAilmentsOptionsDuration : undefined,
       };
     },
@@ -117,14 +126,12 @@ const handlers: { [hookName: string]: StatusAilmentHandler } = {
 
       if (statusAilment.durationTurn) {
         return {
-          isBuff: true,
-          isNeutral: false,
+          verb: EnlirStatusVerb.GRANTS,
           description: `No Air Time ${statusAilment.durationTurn}`,
         };
       } else if (statusAilment.duration) {
         return {
-          isBuff: true,
-          isNeutral: false,
+          verb: EnlirStatusVerb.GRANTS,
           description: 'No Air Time',
         };
       } else {
@@ -139,14 +146,12 @@ const handlers: { [hookName: string]: StatusAilmentHandler } = {
         return null;
       }
       return {
-        isBuff: statusAilment.increaseLevel > 0,
-        isNeutral: false,
+        verb: statusAilment.increaseLevel > 0 ? EnlirStatusVerb.GRANTS : EnlirStatusVerb.CAUSES,
         description: `Heavy Charge ${withPlus(statusAilment.increaseLevel)}`,
       };
     },
     setForUnsetHeavyCharge: () => ({
-      isBuff: false,
-      isNeutral: false,
+      verb: EnlirStatusVerb.CAUSES,
       description: 'Heavy Charge =0',
     }),
   },
@@ -169,12 +174,12 @@ export function isCommonDebuff(battleData: BattleData, statusAilmentId: number) 
   return isInBundle(battleData, battleData.conf.STATUS_AILMENTS_BUNDLE.DISPEL, statusAilmentId);
 }
 
-export function getStatusVerb({ isBuff, isNeutral }: StatusAilmentDescription) {
-  if (isNeutral) {
-    return '';
-  } else {
-    return isBuff ? 'grants ' : 'causes ';
-  }
+export function getStatusVerb({ verb }: StatusAilmentDescription) {
+  return verb === EnlirStatusVerb.GRANTS
+    ? 'grants '
+    : verb === EnlirStatusVerb.CAUSES
+    ? 'causes '
+    : '';
 }
 
 export function describeStatusAilment(
@@ -205,8 +210,9 @@ export function describeStatusAilment(
 
   // Fall back to default.
   return {
-    isBuff: isCommonBuff(battleData, statusAilmentId),
-    isNeutral: false,
+    verb: isCommonBuff(battleData, statusAilmentId)
+      ? EnlirStatusVerb.GRANTS
+      : EnlirStatusVerb.CAUSES,
     description: _.startCase(_.camelCase(status._name)),
   };
 }

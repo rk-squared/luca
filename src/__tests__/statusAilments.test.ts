@@ -1,4 +1,4 @@
-import { describeStatusAilment, statusHandlers } from '../statusAilments';
+import { describeStatusAilment, statusHandlers, EnlirStatusVerb } from '../statusAilments';
 
 import { battleData } from '../gameData/battleData';
 import { LangType } from '../util';
@@ -42,13 +42,11 @@ describe('statusAilments', () => {
 
   it('handles Heavy Charge', () => {
     expect(describeStatusAilment(battleData[LangType.Gl], 50110)).toEqual({
-      isBuff: true,
-      isNeutral: false,
+      verb: EnlirStatusVerb.GRANTS,
       description: 'Heavy Charge +1',
     });
     expect(describeStatusAilment(battleData[LangType.Gl], 50112)).toEqual({
-      isBuff: false,
-      isNeutral: false,
+      verb: EnlirStatusVerb.CAUSES,
       description: 'Heavy Charge =0',
     });
   });
