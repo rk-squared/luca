@@ -16,12 +16,12 @@ import { logger } from './logger';
 
 import * as _ from 'lodash';
 
-// tslint:disable no-console
-
 // This is equivalent to `typeof google.auth.OAuth2`, but importing it directly
 // (and listing it as a dev. dependency) appears to be necessary to silence
 // TypeScript warnings.
 import { OAuth2Client } from 'google-auth-library';
+
+// tslint:disable no-console
 
 function questionAsync(r: readline.ReadLine, query: string): Promise<string> {
   return new Promise<string>(resolve => {
@@ -96,7 +96,7 @@ async function getNewToken(oAuth2Client: OAuth2Client): Promise<OAuth2Client> {
 
   // Store the token to disk for later program executions
   await fs.writeFile(tokenPath, JSON.stringify(token));
-  logger.info('Token stored to', tokenPath);
+  logger.info(`Token stored to ${tokenPath}`);
 
   return oAuth2Client;
 }
@@ -130,6 +130,7 @@ function toCommon(field: string, value: string) {
 
 const stats = new Set(['HP', 'ATK', 'DEF', 'MAG', 'RES', 'MND', 'ACC', 'EVA', 'SPD']);
 
+// noinspection JSUnusedGlobalSymbols
 /**
  * Fields common to "skills" - abilities, soul breaks, etc.
  */
@@ -254,10 +255,38 @@ function convertCharacters(rows: any[]): any[] {
         item[field] = toCommon(field, rows[i][j]);
       }
     }
+
+    if (item['name'] == null && (item['id'] == null || Number.isNaN(item['id']))) {
+      // A footer row indicating an upcoming balance change, and not an actual
+      // character.
+      continue;
+    }
+
     characters.push(item);
   }
 
   return characters;
+}
+
+/**
+ * Post-process character data to add whether each character is in GL.  The
+ * Characters sheet itself doesn't have a GL column, and the Google Sheets API
+ * doesn't appear to offer a way to get at the formatting (background color)
+ * that indicates whether a character is in GL.  Instead, we can look at
+ * per-character items (specifically, record materia) to see if those are in
+ * GL.
+ */
+function postProcessCharacters(characters: any[], allData: { [localName: string]: any[] }) {
+  const isCharacterInGl: { [character: string]: boolean } = {};
+  _.forEach(allData.recordMateria, i => {
+    if (i.gl) {
+      isCharacterInGl[i.character] = true;
+    }
+  });
+
+  for (const c of characters) {
+    c.gl = isCharacterInGl[c.name] || false;
+  }
 }
 
 function convertMagicite(rows: any[]): any[] {
@@ -461,7 +490,14 @@ function convertSoulBreaks(rows: any[]): any[] {
   return soulBreaks;
 }
 
-const dataTypes = [
+interface DataType {
+  sheet: string;
+  localName: string;
+  converter: (rows: any[]) => any[];
+  postProcessor?: (data: any[], allData: { [localName: string]: any[] }) => void;
+}
+
+const dataTypes: DataType[] = [
   {
     sheet: 'Abilities',
     localName: 'abilities',
@@ -471,6 +507,7 @@ const dataTypes = [
     sheet: 'Characters',
     localName: 'characters',
     converter: convertCharacters,
+    postProcessor: postProcessCharacters,
   },
   {
     sheet: 'Magicite',
@@ -509,16 +546,29 @@ async function downloadEnlir(auth: OAuth2Client, spreadsheetId: string) {
 
 async function convertEnlir(outputDirectory: string) {
   await fs.ensureDir(outputDirectory);
+
+  const allData: { [name: string]: any[] } = {};
   for (const { localName, converter } of dataTypes) {
     logger.info(`Converting ${localName}...`);
     const rawData = await fs.readJson(path.join(workPath, localName + '.json'));
-    const data = converter(rawData.values);
+    allData[localName] = converter(rawData.values);
+  }
 
+  for (const { localName, postProcessor } of dataTypes) {
+    if (!postProcessor) {
+      continue;
+    }
+    logger.info(`Post-processing ${localName}...`);
+    postProcessor(allData[localName], allData);
+  }
+
+  for (const { localName } of dataTypes) {
+    logger.info(`Writing ${localName}...`);
     const outputFile = path.join(outputDirectory, localName + '.json');
     if (fs.existsSync(outputFile)) {
       fs.renameSync(outputFile, outputFile + '.bak');
     }
-    await fs.writeJson(outputFile, data, { spaces: 2 });
+    await fs.writeJson(outputFile, allData[localName], { spaces: 2 });
   }
 }
 
