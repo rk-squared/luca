@@ -178,7 +178,7 @@ function getAllStatusAilmentBundles() {
 
 function convertBattleJs(lang: LangType) {
   logger.info(`Processing battle info for ${lang.toUpperCase()}...`);
-  const battleJs = fs.readFileSync(path.join(workPath, lang, `battle.js`)).toString();
+  const battleJs = fs.readFileSync(path.join(workPath, lang, 'js', 'battle.js')).toString();
   safeEval(battleJs, gameContext);
 
   // console.log(gameModules.get('scenes/battle/Conf'));

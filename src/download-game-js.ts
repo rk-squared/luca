@@ -9,6 +9,7 @@
 import axios from 'axios';
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import * as yargs from 'yargs';
 
 import { logger } from './logger';
 import { LangType } from './util';
@@ -27,7 +28,7 @@ const baseUrl: { [lang in LangType]: string } = {
   [LangType.Gl]: 'https://ffrk.static.denagames.com/dff/static/ww/compile/en/',
   [LangType.Jp]: 'https://dff.sp.mbga.jp/dff/static/',
 };
-const jsFiles = [
+const battleJsFiles = [
   // Recommended by the FFRK Reddit wiki, although I haven't yet needed it.
   'js/lib.js',
 
@@ -38,6 +39,30 @@ const jsFiles = [
   // code depends on.
   'js/pre.js',
 ];
+
+const allJsFiles = battleJsFiles.concat([
+  // Additional JavaScript from the /dff/ file that's loaded at startup:
+  // vendor.js doesn't work with our very primitive unpacker.
+  // 'js/vendor.js',
+  'js/templates.js',
+  'js/event/challenge/app.js',
+  'js/templates_event/challenge.js',
+  'js/event/beast/app.js',
+  'js/templates_event/beast.js',
+  'js/event/extreme/app.js',
+  'js/templates_event/extreme.js',
+  'js/event/original_scenario/app.js',
+  'js/templates_event/original_scenario.js',
+  'js/event/wday/app.js',
+  'js/templates_event/wday.js',
+  'js/event/suppress/app.js',
+  'js/templates_event/suppress.js',
+  'js/event/rotation/app.js',
+  'js/templates_event/rotation.js',
+  'js/event/original_scenario/app.js',
+  'js/templates_event/original_scenario.js',
+  'js/app.js',
+]);
 
 /**
  * Unpacks any eval-based JavaScript, using the safe-eval module.  See
@@ -57,32 +82,43 @@ function unpackJs(rawJs: string) {
   return safeEval(rawJs.substring(prefix.length, rawJs.length - suffix.length));
 }
 
-async function downloadAndProcess(url: string, lang: LangType) {
-  const localBaseFilename = path.basename(url);
-  logger.info(`Processing ${lang.toUpperCase()} ${localBaseFilename}...`);
+async function downloadAndProcess(url: string, file: string, lang: LangType) {
+  const localBaseFilename = path.basename(file);
+  logger.info(`Processing ${lang.toUpperCase()} ${localBaseFilename}: ${url + file}`);
 
-  const localDirectory = path.join(workPath, lang);
+  const localDirectory = path.join(workPath, lang, path.dirname(file));
   fs.ensureDirSync(localDirectory);
   const localFilename = path.join(localDirectory, localBaseFilename);
 
-  const response = await axios.get(url);
+  const response = await axios.get(url + file);
   const rawJs = response.data;
-  const unpackedJs = unpackJs(rawJs);
-  const prettyJs = beautify(unpackedJs);
-  fs.writeFileSync(localFilename, prettyJs);
+  try {
+    const unpackedJs = unpackJs(rawJs);
+    const prettyJs = beautify(unpackedJs);
+    fs.writeFileSync(localFilename, prettyJs);
+  } catch (e) {
+    fs.writeFileSync(localFilename + '.tmp', rawJs);
+    throw e;
+  }
 }
 
-async function downloadAndProcessAll() {
+async function downloadAndProcessList(jsFiles: string[]) {
   return Promise.all(
     _.map(baseUrl, async (url, key) => {
       const lang = key as LangType;
       for (const file of jsFiles) {
-        await downloadAndProcess(url + file, lang);
+        await downloadAndProcess(url, file, lang);
       }
     }),
   );
 }
 
+const argv = yargs.option('all', {
+  alias: 'a',
+  default: false,
+  description: 'Download all (not just battle.js)',
+}).argv;
+
 if (require.main === module) {
-  downloadAndProcessAll().catch(e => console.error(e));
+  downloadAndProcessList(argv.all ? allJsFiles : battleJsFiles).catch(e => console.error(e));
 }
