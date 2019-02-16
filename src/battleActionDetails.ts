@@ -32,6 +32,27 @@ function isSoulBreak(options: Options, args: NamedArgs): boolean {
   return !(options.counter_enable && +options.counter_enable);
 }
 
+function formatEnlirStatus(
+  battleData: BattleData,
+  statusId: number,
+  args: NamedArgs,
+  options: Options,
+): string {
+  const status = getStatusAilmentDetails(battleData, statusId, args, {
+    factor: options ? +options.status_ailments_factor || undefined : undefined,
+  });
+  if (!status) {
+    logger.warn(`Unknown status ID ${statusId}`);
+    return 'causes unknown status ${statusId}';
+  }
+  const verb = getStatusVerb(status);
+  let desc = verb + ' ' + status.description;
+  if (status.factor) {
+    desc += ` (${status.factor}%)`;
+  }
+  return desc;
+}
+
 function formatEnlirAttack(battleData: BattleData, options: Options, args: NamedArgs): string {
   const target = battleData.targetRangeLookup[options.target_range];
   const count = _.upperFirst(converter.toWords(args.barrageNum || 1));
@@ -59,16 +80,7 @@ function formatEnlirAttack(battleData: BattleData, options: Options, args: Named
   }
 
   if (options.status_ailments_id && options.status_ailments_id !== '0') {
-    const statusId = +options.status_ailments_id;
-    const status = getStatusAilmentDetails(battleData, statusId, args);
-    let statusName: string;
-    if (!status) {
-      logger.warn(`Unknown status ID ${statusId}`);
-      statusName = `unknown status ${statusId}`;
-    } else {
-      statusName = status.description;
-    }
-    desc += `, causes ${statusName} (${options.status_ailments_factor}%)`;
+    desc += ', ' + formatEnlirStatus(battleData, +options.status_ailments_id, args, options);
   }
 
   return desc;
@@ -107,6 +119,7 @@ function formatStatuses(
   bundleIds?: number[],
   args?: NamedArgs,
 ): string {
+  // DO SOMETHING WITH formatEnlirStatus instead!!!
   return _.filter(
     _.flatten([
       (statusAilmentIds || []).map(i =>

@@ -6,6 +6,15 @@ import { Options } from './schemas/get_battle_init_data';
 
 import * as _ from 'lodash';
 
+/**
+ * FFRK saves action data as a series of numeric arguments (arg1..arg30) within
+ * get_battle_init_data's Options.  These arguments' meanings are determined by
+ * the battle.js code that implements the corresponding action ID.  To make
+ * that easier to work with, we map those numeric arguments to property names
+ * used with battle.js action code.
+ *
+ * Additional action data is kept in named properties of battle_
+ */
 export interface NamedArgs {
   damageFactor?: number;
   barrageNum?: number;
@@ -102,7 +111,7 @@ export interface NamedArgs {
   unsetSaBundle?: number[];
 
   /**
-   * Percentage for stat boosts.  These are martialled by action class code in
+   * Percentage for stat boosts.  These are marshalled by action class code in
    * battle.js and merged with the boosts array of the status ailment
    * definition, which provides additional details (such as *which* stats are
    * boosted).

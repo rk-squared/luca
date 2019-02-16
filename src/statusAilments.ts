@@ -66,7 +66,9 @@ export enum EnlirStatusVerb {
 interface StatusAilmentDetails {
   verb: EnlirStatusVerb;
 
+  // Options - see StatusAilmentOptions
   duration?: number;
+  factor?: number;
 
   description: string;
 }
@@ -77,10 +79,16 @@ interface StatusAilmentBundleDetails {
 }
 
 /**
- * Per-action status ailment options as extracted from NamedArgs
+ * Per-action status ailment options as extracted from NamedArgs and
+ * get_battle_init_data Options
  */
 export interface StatusAilmentOptions {
   duration?: number;
+
+  /**
+   * Percent chance
+   */
+  factor?: number;
 }
 
 interface StatusHandlerType {
@@ -240,9 +248,9 @@ export function getStatusAilmentDetails(
   options?: StatusAilmentOptions,
 ): StatusAilmentDetails | null {
   const status = battleData.extra.statusAilments[statusAilmentId];
-  const result = getStatusAilmentDetailsImpl(battleData, statusAilmentId, status, args, options);
-  if (result && options && options.duration) {
-    result.duration = options.duration;
+  let result = getStatusAilmentDetailsImpl(battleData, statusAilmentId, status, args, options);
+  if (result && options) {
+    result = { ...result, ...options };
   }
   return result;
 }

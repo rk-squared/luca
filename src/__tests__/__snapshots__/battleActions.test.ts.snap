@@ -111,6 +111,39 @@ Object {
 }
 `;
 
+exports[`battleActions convertAbility converts soul break abilities with stat buffs 1`] = `
+Object {
+  "action": "HealHpAndCustomParamAction",
+  "alias": null,
+  "args": Object {
+    "damageFactor": 0,
+    "factor": 55,
+    "ignoresReflection": 0,
+    "matkElement": 0,
+    "statusAilmentsBoostIsAbsolute": 0,
+    "statusAilmentsBoostValue": 30,
+    "statusAilmentsOptionsDuration": 25000,
+  },
+  "autoTarget": "All allies",
+  "breaksDamageCap": false,
+  "counter": false,
+  "effects": "Restores HP (55), MAG and MND 30%",
+  "element": null,
+  "formula": undefined,
+  "id": 30511390,
+  "multiplier": null,
+  "name": "癒しの風【IV】",
+  "nameGl": null,
+  "sb": 0,
+  "school": "White Magic",
+  "statusAilmentsFactor": 100,
+  "statusAilmentsId": 623,
+  "target": "All allies",
+  "time": 2.5,
+  "type": "WHT",
+}
+`;
+
 exports[`battleActions convertAbility converts soul break jump attacks 1`] = `
 Object {
   "action": "PhysicalAttackMultiAction",

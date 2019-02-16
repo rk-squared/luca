@@ -194,6 +194,69 @@ describe('battleActions', () => {
       expect(ability).toMatchSnapshot();
     });
 
+    it('converts soul break abilities with stat buffs', () => {
+      const poromBsbEffectAbilityData = {
+        category_id: '2',
+        options: {
+          arg4: '30',
+          min_damage_threshold_type: '0',
+          arg7: '0',
+          arg20: '0',
+          status_ailments_id: '623',
+          arg18: '0',
+          ss_point: '0',
+          arg28: '0',
+          arg12: '0',
+          arg22: '0',
+          arg17: '0',
+          arg15: '0',
+          arg1: '55',
+          arg10: '0',
+          arg21: '0',
+          arg11: '0',
+          name: '癒しの風【IV】',
+          arg24: '0',
+          arg2: '0',
+          arg5: '25000',
+          alias_name: '癒しの風【IV】',
+          panel_name: '癒しの風{n}【IV】',
+          arg14: '0',
+          target_segment: '2',
+          arg25: '0',
+          arg30: '0',
+          arg9: '0',
+          arg13: '0',
+          arg19: '0',
+          arg27: '0',
+          counter_enable: '0',
+          arg23: '0',
+          arg29: '0',
+          target_range: '2',
+          arg26: '0',
+          target_death: '1',
+          arg3: '0',
+          cast_time: '2500',
+          arg8: '0',
+          max_damage_threshold_type: '0',
+          arg6: '0',
+          target_method: '6',
+          active_target_method: '1',
+          status_ailments_factor: '100',
+          arg16: '0',
+          ability_animation_id: '71376',
+        },
+        exercise_type: '3',
+        action_id: '54',
+        ability_id: '30511390',
+      };
+
+      const ability = convertAbility(battleData[LangType.Jp], poromBsbEffectAbilityData);
+
+      expect(ability.effects).toEqual('Restores HP (55), MAG and MND 30% for 25 seconds');
+
+      expect(ability).toMatchSnapshot();
+    });
+
     it('converts soul break jump attacks', () => {
       const kainCsbEffectAbilityData = {
         category_id: '5',

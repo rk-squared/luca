@@ -11,8 +11,8 @@
     "lint": "tslint --project .",
     "test": "jest",
     "test:watch": "jest --watch",
-    "get-battle-args-gl": "jscodeshift --run-in-band --dry --transform src/get-battle-args.js tmp/gl/battle.js --lang=gl",
-    "get-battle-args-jp": "jscodeshift --run-in-band --dry --transform src/get-battle-args.js tmp/jp/battle.js --lang=jp",
+    "get-battle-args-gl": "jscodeshift --run-in-band --dry --transform src/get-battle-args.js tmp/gl/js/battle.js --lang=gl",
+    "get-battle-args-jp": "jscodeshift --run-in-band --dry --transform src/get-battle-args.js tmp/jp/js/battle.js --lang=jp",
     "get-battle-args": "npm run get-battle-args-gl && npm run get-battle-args-jp",
     "copy-json": "copyfiles \"./src/gl/*.json\" \"./src/jp/*.json\" dist --up 1 && copyfiles \"./src/enlir/*.json\" dist --up 1"
   },
