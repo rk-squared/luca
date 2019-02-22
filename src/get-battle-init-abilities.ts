@@ -81,6 +81,10 @@ function getBattleInitAbilities(fileNames: string[]) {
 }
 
 if (require.main === module) {
-  const result = getBattleInitAbilities(process.argv.slice(2));
-  console.log(JSON.stringify(result.length === 1 ? result[0] : result, null, 2));
+  try {
+    const result = getBattleInitAbilities(process.argv.slice(2));
+    console.log(JSON.stringify(result.length === 1 ? result[0] : result, null, 2));
+  } catch (e) {
+    console.log(e);
+  }
 }

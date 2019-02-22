@@ -4,6 +4,13 @@ import { commaSeparated, forceArray, withPlus } from './util';
 
 import * as _ from 'lodash';
 
+interface StatusAilmentFuncMap {
+  entry?: string | string[];
+  update?: string | string[];
+  abilityDoneHook?: string | string[];
+  set?: string | string[];
+}
+
 /**
  * A status ailment as described within FFRK's battle.js
  */
@@ -36,12 +43,7 @@ interface StatusAilment {
     absolute?: number;
   }>;
 
-  funcMap: {
-    entry?: string | string[];
-    update?: string | string[];
-    abilityDoneHook?: string | string[];
-    set?: string | string[];
-  };
+  funcMap?: StatusAilmentFuncMap;
 
   // One-off parameters for individual handler functions.
   durationTurn?: number;
@@ -135,7 +137,7 @@ interface StatusAilmentHandler {
   [functionName: string]: (status: StatusAilment) => StatusAilmentDetails | null;
 }
 
-const handlers: { [hookName in keyof StatusAilment['funcMap']]: StatusAilmentHandler } = {
+const handlers: { [hookName in keyof StatusAilmentFuncMap]: StatusAilmentHandler } = {
   entry: {
     entryChangeFlightDuration: (statusAilment: StatusAilment) => {
       if (statusAilment.flightDuration !== 10) {
@@ -219,14 +221,16 @@ function getStatusAilmentDetailsImpl(
     }
   }
 
-  const checkHooks: Array<keyof StatusAilment['funcMap']> = ['set', 'entry'];
-  for (const hook of checkHooks) {
-    const handler = handlers[hook];
-    const funcNames = status.funcMap[hook];
-    if (handler != null && funcNames != null) {
-      for (const funcName of forceArray(funcNames)) {
-        if (handler[funcName]) {
-          return handler[funcName](status);
+  if (status.funcMap) {
+    const checkHooks: Array<keyof StatusAilmentFuncMap> = ['set', 'entry'];
+    for (const hook of checkHooks) {
+      const handler = handlers[hook];
+      const funcNames = status.funcMap[hook];
+      if (handler != null && funcNames != null) {
+        for (const funcName of forceArray(funcNames)) {
+          if (handler[funcName]) {
+            return handler[funcName](status);
+          }
         }
       }
     }
