@@ -9,96 +9,23 @@
 import * as fs from 'fs-extra';
 import { google } from 'googleapis';
 import * as path from 'path';
-import * as readline from 'readline';
 import * as yargs from 'yargs';
 
-import { logger } from './logger';
-
 import * as _ from 'lodash';
-
-// tslint:disable no-console
 
 // This is equivalent to `typeof google.auth.OAuth2`, but importing it directly
 // (and listing it as a dev. dependency) appears to be necessary to silence
 // TypeScript warnings.
 import { OAuth2Client } from 'google-auth-library';
 
-function questionAsync(r: readline.ReadLine, query: string): Promise<string> {
-  return new Promise<string>(resolve => {
-    r.question(query, resolve);
-  });
-}
+import { authorize, enlirSpreadsheetIds, loadEnlirCredentials, workPath } from './enlirClient';
+import { logger } from './logger';
 
-const workPath = path.join(__dirname, '..', 'tmp');
-fs.ensureDirSync(workPath);
+// tslint:disable no-console
 
-// The file token.json stores the user's access and refresh tokens.  It's
-// created automatically when the authorization flow completes for the first
-// time.
-const tokenPath = path.join(workPath, 'token.json');
-
-// noinspection SpellCheckingInspection
-const enlirSpreadsheetIds: { [name: string]: string } = {
-  enlir: '16K1Zryyxrh7vdKVF1f7eRrUAOC5wuzvC3q2gFLch6LQ',
-  community: '1f8OJIQhpycljDQ8QNDk_va1GJ1u7RVoMaNjFcHH0LKk',
-};
-
-interface GoogleApiCredentials {
-  installed: {
-    client_id: string;
-    project_id: string;
-    auth_uri: string;
-    token_uri: string;
-    auth_provider_x509_cert_url: string;
-    client_secret: string;
-    redirect_uris: [string, string];
-  };
-}
-
-/**
- * Create an OAuth2 client with the given credentials, and then execute the
- * given callback function.
- */
-async function authorize(credentials: GoogleApiCredentials): Promise<OAuth2Client> {
-  const { client_secret, client_id, redirect_uris } = credentials.installed;
-  const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
-
-  // Check if we have previously stored a token.
-  try {
-    const token = await fs.readJson(tokenPath);
-    oAuth2Client.setCredentials(token);
-    return oAuth2Client;
-  } catch (e) {
-    return getNewToken(oAuth2Client);
-  }
-}
-
-/**
- * Get and store new token after prompting for user authorization, and then
- * execute the given callback with the authorized OAuth2 client.
- */
-async function getNewToken(oAuth2Client: OAuth2Client): Promise<OAuth2Client> {
-  const authUrl = oAuth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-  });
-
-  console.log('Authorize this app by visiting this url:', authUrl);
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-  const code = await questionAsync(rl, 'Enter the code from that page here: ');
-  rl.close();
-
-  const token = (await oAuth2Client.getToken(code)).tokens;
-  oAuth2Client.setCredentials(token);
-
-  // Store the token to disk for later program executions
-  await fs.writeFile(tokenPath, JSON.stringify(token));
-  logger.info('Token stored to', tokenPath);
-
-  return oAuth2Client;
+function logError(e: Error, rowNumber: number, colNumber: number, colName: string, row: string[]) {
+  logger.error(`Error on row ${rowNumber + 1} ${colName}: ${e}`);
+  logger.error(JSON.stringify(row, undefined, 2));
 }
 
 const toBool = (value: string) => value === 'Y';
@@ -108,17 +35,42 @@ const toFloat = (value: string) =>
 const toString = (value: string) => (value === '' ? null : value);
 const checkToBool = (value: string) => value === '✓';
 
+function dashAs<TDash, TValue>(
+  dashValue: TDash,
+  f: (value: string) => TValue,
+): (value: string) => TValue | TDash {
+  return (value: string) => (value === '-' ? dashValue : f(value));
+}
+const dashNull = <T>(f: (value: string) => T) => dashAs(null, f);
+function toCommaSeparatedArray<T>(f: (value: string) => T): (value: string) => T[] | null {
+  return (value: string) => (value === '' ? null : value.split(', ').map(f));
+}
+function ifNull<T>(f: (value: string) => T | null, nullValue: T): (value: string) => T {
+  return (value: string) => {
+    const result = f(value);
+    return result == null ? nullValue : result;
+  };
+}
+
 function toStringWithDecimals(value: string) {
   if (value === '') {
     return null;
   } else {
+    // Convert commas (European decimal separator) to decimals for versions
+    // of the spreadsheet prior to 5/6/2019.
     return value.replace(/(\d+),(\d+)/g, '$1.$2');
   }
+}
+
+function toStringWithLookup(lookup: _.Dictionary<string>) {
+  return (s: string) => lookup[s] || s;
 }
 
 function toCommon(field: string, value: string) {
   if (field === 'effects' || field === 'effect') {
     return toStringWithDecimals(value);
+  } else if (field === 'realm') {
+    return dashNull(toString)(value);
   } else if (field === 'id') {
     return toInt(value);
   } else if (field === 'gl') {
@@ -130,6 +82,12 @@ function toCommon(field: string, value: string) {
 
 const stats = new Set(['HP', 'ATK', 'DEF', 'MAG', 'RES', 'MND', 'ACC', 'EVA', 'SPD']);
 
+const elementAbbreviations: _.Dictionary<string> = {
+  'Wat.': 'Water',
+  'Ea.': 'Earth',
+};
+
+// noinspection JSUnusedGlobalSymbols
 /**
  * Fields common to "skills" - abilities, soul breaks, etc.
  */
@@ -138,13 +96,16 @@ const skillFields: { [col: string]: (value: string) => any } = {
   Target: toString,
   Formula: toString,
   Multiplier: toFloat,
-  Element: toString,
+  Element: dashAs([], toCommaSeparatedArray(toStringWithLookup(elementAbbreviations))),
   Time: toFloat,
-  Effects: toStringWithDecimals,
+  // For skills in particular, a null effect string is annoying.  Avoid it.
+  Effects: ifNull(toStringWithDecimals, ''),
   Counter: toBool,
   'Auto Target': toString,
   SB: toInt,
   Points: toInt,
+  Brave: toInt,
+  'Brave Condition': toCommaSeparatedArray(toString),
 };
 
 // The '✓' column indicates whether a row has been confirmed (e.g., verified
@@ -254,10 +215,64 @@ function convertCharacters(rows: any[]): any[] {
         item[field] = toCommon(field, rows[i][j]);
       }
     }
+
+    if (item['name'] == null && (item['id'] == null || Number.isNaN(item['id']))) {
+      // A footer row indicating an upcoming balance change, and not an actual
+      // character.
+      continue;
+    }
+
     characters.push(item);
   }
 
   return characters;
+}
+
+/**
+ * Post-process character data to add whether each character is in GL.  The
+ * Characters sheet itself doesn't have a GL column, and the Google Sheets API
+ * doesn't appear to offer a way to get at the formatting (background color)
+ * that indicates whether a character is in GL.  Instead, we can look at
+ * per-character items (specifically, record materia) to see if those are in
+ * GL.
+ */
+function postProcessCharacters(characters: any[], allData: { [localName: string]: any[] }) {
+  const isCharacterInGl: { [character: string]: boolean } = {};
+  _.forEach(allData.recordMateria, i => {
+    if (i.gl) {
+      isCharacterInGl[i.character] = true;
+    }
+  });
+
+  for (const c of characters) {
+    c.gl = isCharacterInGl[c.name] || false;
+  }
+}
+
+function convertLegendMateria(rows: any[]): any[] {
+  const legendMateria: any[] = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const item: any = {};
+
+    for (let j = 0; j < rows[0].length; j++) {
+      const col = rows[0][j];
+      if (shouldAlwaysSkip(col)) {
+        continue;
+      }
+
+      const field = _.camelCase(col);
+      if (field === 'relic') {
+        item[field] = dashNull(toString)(rows[i][j]);
+      } else {
+        item[field] = toCommon(field, rows[i][j]);
+      }
+    }
+
+    legendMateria.push(item);
+  }
+
+  return legendMateria;
 }
 
 function convertMagicite(rows: any[]): any[] {
@@ -265,10 +280,20 @@ function convertMagicite(rows: any[]): any[] {
 
   let passive: string | null = null;
 
+  const columnsByName: _.Dictionary<string> = _.fromPairs(
+    rows[0].map((col: string, i: number) => [col, i]),
+  );
+
   for (let i = 1; i < rows.length; i++) {
     if (!rows[i].length) {
       // Skip explanatory text at the bottom of the sheet.
       break;
+    }
+
+    if (!rows[i][columnsByName['ID']]) {
+      // Skip magicite that are not yet released and have no ID.
+      logger.debug('Skipping ' + rows[i][columnsByName['Name']] + ' (not yet released)');
+      continue;
     }
 
     const item: any = {};
@@ -289,40 +314,45 @@ function convertMagicite(rows: any[]): any[] {
         inUltraSkill = false;
       }
 
-      const field = _.camelCase(col);
-      if (col === 'Rarity') {
-        item[field] = toInt(rows[i][j]);
-      } else if (stats.has(col)) {
-        item.stats = item.stats || {};
-        item.stats[field] = toInt(rows[i][j]);
-      } else if (col.match(/Passive \d+/)) {
-        passive = rows[i][j];
-        if (passive) {
-          item.passives = item.passives || {};
-          item.passives[passive] = {};
-        }
-      } else if (col.match(/^\d+$/)) {
-        if (rows[i][j]) {
-          if (!passive) {
-            throw new Error(`Missing passive at row ${i} column ${j}`);
+      try {
+        const field = _.camelCase(col);
+        if (col === 'Rarity') {
+          item[field] = toInt(rows[i][j]);
+        } else if (stats.has(col)) {
+          item.stats = item.stats || {};
+          item.stats[field] = toInt(rows[i][j]);
+        } else if (col.match(/Passive \d+/)) {
+          passive = rows[i][j];
+          if (passive) {
+            item.passives = item.passives || {};
+            item.passives[passive] = {};
           }
-          item.passives[passive][+col] = toInt(rows[i][j]);
+        } else if (col.match(/^\d+$/)) {
+          if (rows[i][j]) {
+            if (!passive) {
+              throw new Error(`Missing passive at row ${i} column ${j}`);
+            }
+            item.passives[passive][+col] = toInt(rows[i][j]);
+          }
+        } else if (col === 'Cooldown' || col === 'Duration') {
+          item[field] = toFloat(rows[i][j]);
+        } else if (col === 'Magicite Ultra Skill') {
+          if (!skipUltraSkill) {
+            item.magiciteUltraSkill = {
+              name: rows[i][j],
+            };
+          }
+        } else if (inUltraSkill) {
+          if (!skipUltraSkill) {
+            const converter = skillFields[col] || toCommon.bind(undefined, field);
+            item.magiciteUltraSkill[field] = converter(rows[i][j]);
+          }
+        } else {
+          item[field] = toCommon(field, rows[i][j]);
         }
-      } else if (col === 'Cooldown' || col === 'Duration') {
-        item[field] = toFloat(rows[i][j]);
-      } else if (col === 'Magicite Ultra Skill') {
-        if (!skipUltraSkill) {
-          item.magiciteUltraSkill = {
-            name: rows[i][j],
-          };
-        }
-      } else if (inUltraSkill) {
-        if (!skipUltraSkill) {
-          const converter = skillFields[col] || toCommon;
-          item.magiciteUltraSkill[field] = converter(rows[i][j]);
-        }
-      } else {
-        item[field] = toCommon(field, rows[i][j]);
+      } catch (e) {
+        logError(e, i, j, col, rows[i]);
+        throw e;
       }
     }
 
@@ -412,7 +442,7 @@ function convertRelics(rows: any[]): any[] {
       const field = _.camelCase(col);
       if (isStat(col)) {
         // Hack: Duplicate the "normal" rarity at the relic level - it often
-        // make more sense there, especially for non-upgradeable relics like
+        // make more sense there, especially for non-upgradable relics like
         // accessories.
         if (field === 'rarity') {
           item.rarity = toStat(field, rows[i][j]);
@@ -425,6 +455,8 @@ function convertRelics(rows: any[]): any[] {
         const f2 = _.camelCase(colAsAltStat(col));
         item[f1] = item[f1] || {};
         item[f1][f2] = toStat(f2, rows[i][j]);
+      } else if (field === 'character' || field === 'relic') {
+        item[field] = dashNull(toString)(rows[i][j]);
       } else {
         item[field] = toCommon(field, rows[i][j]);
       }
@@ -436,11 +468,24 @@ function convertRelics(rows: any[]): any[] {
   return relics;
 }
 
-function convertSoulBreaks(rows: any[]): any[] {
-  const soulBreaks: any[] = [];
+/**
+ * Convert "skills" - this includes abilities, soul breaks, burst commands,
+ * brave commands, and "other" skills
+ */
+function convertSkills(rows: any[], notes?: NotesRowData[], requireId: boolean = true): any[] {
+  const skills: any[] = [];
+
+  const idColumn = rows[0].indexOf('ID');
 
   for (let i = 1; i < rows.length; i++) {
     const item: any = {};
+
+    if (requireId && !rows[i][idColumn]) {
+      logger.warn(`Skipping row ${i + 1}: Missing ID number`);
+      logger.warn(rows[i].join(', '));
+      continue;
+    }
+
     for (let j = 0; j < rows[0].length; j++) {
       const col = rows[0][j];
       if (shouldAlwaysSkip(col)) {
@@ -448,34 +493,130 @@ function convertSoulBreaks(rows: any[]): any[] {
       }
 
       const field = _.camelCase(col);
-      if (skillFields[col]) {
-        item[field] = skillFields[col](rows[i][j]);
-      } else {
-        item[field] = toCommon(field, rows[i][j]);
+      try {
+        if (skillFields[col]) {
+          item[field] = skillFields[col](rows[i][j]);
+        } else {
+          item[field] = toCommon(field, rows[i][j]);
+        }
+      } catch (e) {
+        logError(e, i, j, col, rows[i]);
+        throw e;
+      }
+
+      const cellNote = _.get(notes, [i, 'values', j, 'note']);
+      if (cellNote) {
+        if (field === 'school') {
+          item['schoolDetails'] = cellNote.split(' / ');
+        } else if (field === 'type') {
+          item['typeDetails'] = cellNote.split('/');
+        } else {
+          item[field + 'Note'] = cellNote;
+        }
       }
     }
 
-    soulBreaks.push(item);
+    skills.push(item);
   }
 
-  return soulBreaks;
+  return skills;
 }
 
-const dataTypes = [
+const convertOtherSkills = (rows: any[], notes?: NotesRowData[]) =>
+  convertSkills(rows, notes, false);
+
+function convertStatus(rows: any[]): any[] {
+  const status: any[] = [];
+
+  const statusFields: { [field: string]: (value: string) => any } = {
+    defaultDuration: dashNull(toInt),
+    exclusiveStatus: dashNull(toCommaSeparatedArray(toString)),
+    notes: dashNull(toString),
+  };
+
+  for (let i = 1; i < rows.length; i++) {
+    const item: any = {};
+
+    // Skip placeholder rows, notes, etc.
+    if (!rows[i][0]) {
+      continue;
+    }
+
+    for (let j = 0; j < rows[0].length; j++) {
+      const col = rows[0][j];
+
+      const field = _.camelCase(col);
+      if (field === 'mndModifier') {
+        item['mndModifier'] = toFloat(rows[i][j].replace('± ', '').replace('%', ''));
+        item['mndModifierIsOpposed'] = rows[i][j].startsWith('± ');
+      } else if (field === 'commonName') {
+        // Rename for consistency with other Enlir sheets
+        item['name'] = rows[i][j];
+      } else {
+        const converter = statusFields[field] || toCommon.bind(undefined, field);
+        item[field] = converter(rows[i][j]);
+      }
+    }
+
+    status.push(item);
+  }
+  return status;
+}
+
+interface NotesRowData {
+  values?: Array<{
+    note?: string;
+  }>;
+}
+
+interface DataType {
+  sheet: string;
+  localName: string;
+  includeNotes?: boolean;
+  converter: (rows: any[], notes?: NotesRowData[]) => any[];
+  postProcessor?: (data: any[], allData: { [localName: string]: any[] }) => void;
+}
+
+const dataTypes: DataType[] = [
   {
     sheet: 'Abilities',
     localName: 'abilities',
+    includeNotes: true,
     converter: convertAbilities,
+  },
+  {
+    sheet: 'Brave',
+    localName: 'brave',
+    includeNotes: true,
+    converter: convertSkills,
+  },
+  {
+    sheet: 'Burst',
+    localName: 'burst',
+    includeNotes: true,
+    converter: convertSkills,
   },
   {
     sheet: 'Characters',
     localName: 'characters',
     converter: convertCharacters,
+    postProcessor: postProcessCharacters,
+  },
+  {
+    sheet: 'Legend Materia',
+    localName: 'legendMateria',
+    converter: convertLegendMateria,
   },
   {
     sheet: 'Magicite',
     localName: 'magicite',
     converter: convertMagicite,
+  },
+  {
+    sheet: 'Other',
+    localName: 'otherSkills',
+    includeNotes: true,
+    converter: convertOtherSkills,
   },
   {
     sheet: 'Record Materia',
@@ -490,35 +631,78 @@ const dataTypes = [
   {
     sheet: 'Soul Breaks',
     localName: 'soulBreaks',
-    converter: convertSoulBreaks,
+    includeNotes: true,
+    converter: convertSkills,
+  },
+  {
+    sheet: 'Status',
+    localName: 'status',
+    converter: convertStatus,
   },
 ];
 
 async function downloadEnlir(auth: OAuth2Client, spreadsheetId: string) {
   const sheets = google.sheets({ version: 'v4', auth });
+  const jsonOptions = { spaces: 2 };
 
-  for (const { sheet, localName } of dataTypes) {
+  for (const { sheet, localName, includeNotes } of dataTypes) {
     logger.info(`Downloading ${localName}...`);
-    const res = await sheets.spreadsheets.values.get({
+
+    const valuesRes = await sheets.spreadsheets.values.get({
       spreadsheetId,
       range: sheet,
     });
-    await fs.writeJson(path.join(workPath, localName + '.json'), res.data);
+    await fs.writeJson(path.join(workPath, localName + '.json'), valuesRes.data, jsonOptions);
+
+    if (includeNotes) {
+      // https://stackoverflow.com/a/53473537/25507
+      const sheetRes = await sheets.spreadsheets.get({
+        spreadsheetId,
+        ranges: valuesRes.data.range,
+        fields: 'sheets/data/rowData/values/note',
+      });
+      await fs.writeJson(
+        path.join(workPath, localName + '.notes.json'),
+        sheetRes.data,
+        jsonOptions,
+      );
+    }
   }
 }
 
 async function convertEnlir(outputDirectory: string) {
   await fs.ensureDir(outputDirectory);
-  for (const { localName, converter } of dataTypes) {
-    logger.info(`Converting ${localName}...`);
-    const rawData = await fs.readJson(path.join(workPath, localName + '.json'));
-    const data = converter(rawData.values);
 
+  const allData: { [name: string]: any[] } = {};
+  for (const { localName, includeNotes, converter } of dataTypes) {
+    logger.info(`Converting ${localName}...`);
+
+    const rawData = await fs.readJson(path.join(workPath, localName + '.json'));
+
+    let notes: any;
+    if (includeNotes) {
+      notes = await fs.readJson(path.join(workPath, localName + '.notes.json'));
+      notes = notes.sheets[0].data[0].rowData;
+    }
+
+    allData[localName] = converter(rawData.values, notes);
+  }
+
+  for (const { localName, postProcessor } of dataTypes) {
+    if (!postProcessor) {
+      continue;
+    }
+    logger.info(`Post-processing ${localName}...`);
+    postProcessor(allData[localName], allData);
+  }
+
+  for (const { localName } of dataTypes) {
+    logger.info(`Writing ${localName}...`);
     const outputFile = path.join(outputDirectory, localName + '.json');
     if (fs.existsSync(outputFile)) {
       fs.renameSync(outputFile, outputFile + '.bak');
     }
-    await fs.writeJson(outputFile, data, { spaces: 2 });
+    await fs.writeJson(outputFile, allData[localName], { spaces: 2 });
   }
 }
 
@@ -539,19 +723,6 @@ const argv = yargs
     demandOption: true,
   }).argv;
 
-// To do: Should we use an API key, rather than OAuth2 credentials, since we're only using public data?
-async function loadEnlirCredentials() {
-  const enlirCredentialsFilename = path.resolve(__dirname, '..', 'credentials.json');
-  try {
-    return await fs.readJson(enlirCredentialsFilename);
-  } catch (e) {
-    console.error(e.message);
-    console.error('Please create a credentials.json file, following the instructions at');
-    console.error('https://developers.google.com/sheets/api/quickstart/nodejs');
-    return null;
-  }
-}
-
 async function main() {
   if (argv.download) {
     const enlirCredentials = await loadEnlirCredentials();
@@ -562,7 +733,7 @@ async function main() {
     const auth = await authorize(enlirCredentials);
     await downloadEnlir(auth, enlirSpreadsheetIds[argv.sheet]);
   }
-  await convertEnlir(argv.outputDirectory);
+  await convertEnlir(argv.outputDirectory as string);
 }
 
 main().catch(e => console.error(e));

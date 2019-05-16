@@ -11,6 +11,7 @@
     "lint": "tslint --project .",
     "test": "jest",
     "test:watch": "jest --watch",
+    "get-enlir": "ts-node src/download-enlir.ts -o src/enlir",
     "get-battle-args-gl": "jscodeshift --run-in-band --dry --transform src/get-battle-args.js tmp/gl/battle.js --lang=gl",
     "get-battle-args-jp": "jscodeshift --run-in-band --dry --transform src/get-battle-args.js tmp/jp/battle.js --lang=jp",
     "get-battle-args": "npm run get-battle-args-gl && npm run get-battle-args-jp",
@@ -56,7 +57,7 @@
     "@types/number-to-words": "^1.2.0",
     "@types/sprintf-js": "^1.1.1",
     "@types/strip-bom": "^3.0.0",
-    "@types/yargs": "^12.0.1",
+    "@types/yargs": "^13.0.0",
     "axios": "^0.18.0",
     "babylon": "^6.18.0",
     "copyfiles": "^2.1.0",
@@ -81,6 +82,6 @@
     "typescript": "^3.1.6",
     "underscore": "^1.9.1",
     "winston": "^3.1.0",
-    "yargs": "^12.0.5"
+    "yargs": "^13.2.2"
   }
 }
