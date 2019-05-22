@@ -104,6 +104,14 @@ const gameModules = new ModuleSet([
         return [value];
       }
     },
+    option(defaults: any, opt: any) {
+      opt = opt || {};
+      const result: any = {};
+      _.each(defaults, (value, key) => {
+        result[key] = _.isUndefined(opt[key]) ? value : opt[key];
+      });
+      return result;
+    },
   }),
   new Module('lib/ClassBase', {
     extend(props: any) {
