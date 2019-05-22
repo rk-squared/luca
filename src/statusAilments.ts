@@ -198,11 +198,13 @@ export function describeStatusAilment(
     }
   }
 
-  for (var hook of ['set', 'entry']) {
-    if (status.funcMap[hook]) {
-      for (var funcName of forceArray(status.funcMap[hook])) {
-        if (handlers[hook][funcName]) {
-          return handlers[hook][funcName](status);
+  if (status.funcMap) {
+    for (const hook of ['set', 'entry']) {
+      if (status.funcMap[hook]) {
+        for (const funcName of forceArray(status.funcMap[hook])) {
+          if (handlers[hook][funcName]) {
+            return handlers[hook][funcName](status);
+          }
         }
       }
     }
