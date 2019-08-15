@@ -116,8 +116,11 @@ async function downloadAndProcessList(jsFiles: string[]) {
 const argv = yargs.option('all', {
   alias: 'a',
   default: false,
+  boolean: true,
   description: 'Download all (not just battle.js)',
 }).argv;
+
+console.log(argv);
 
 if (require.main === module) {
   downloadAndProcessList(argv.all ? allJsFiles : battleJsFiles).catch(e => console.error(e));
