@@ -64,6 +64,9 @@ const allJsFiles = battleJsFiles.concat([
   'js/app.js',
 ]);
 
+// CSS: https://ffrk.static.denagames.com/dff/static/ww/compile/en/css/compile/forAndroid4x/main.css
+// (not currently automatically implemented)
+
 /**
  * Unpacks any eval-based JavaScript, using the safe-eval module.  See
  * https://www.npmjs.com/package/safe-eval
