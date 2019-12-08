@@ -65,6 +65,7 @@ const allJsFiles = battleJsFiles.concat([
 ]);
 
 // CSS: https://ffrk.static.denagames.com/dff/static/ww/compile/en/css/compile/forAndroid4x/main.css
+//  and https://ffrk.static.denagames.com/dff/static/ww/compile/en/css/compile/forAts/main.css
 // (not currently automatically implemented)
 
 /**
