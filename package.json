@@ -65,7 +65,7 @@
     "copyfiles": "^2.1.0",
     "fs-extra": "^7.0.1",
     "google-auth-library": "^2.0.1",
-    "googleapis": "^35.0.0",
+    "googleapis": "^39.1.0",
     "jest": "^23.6.0",
     "js-beautify": "^1.8.8",
     "jscodeshift": "^0.5.1",
