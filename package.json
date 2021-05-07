@@ -82,7 +82,7 @@
     "tslint": "^5.11.0",
     "tslint-config-prettier": "^1.17.0",
     "typescript": "^3.1.6",
-    "underscore": "^1.9.1",
+    "underscore": "^1.12.1",
     "winston": "^3.1.0",
     "yargs": "^13.2.2"
   }
