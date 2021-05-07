@@ -69,7 +69,7 @@
     "jest": "^23.6.0",
     "js-beautify": "^1.8.8",
     "jscodeshift": "^0.5.1",
-    "lodash": "^4.17.13",
+    "lodash": "^4.17.21",
     "logform": "^1.10.0",
     "number-to-words": "^1.2.4",
     "prettier": "^1.15.2",
