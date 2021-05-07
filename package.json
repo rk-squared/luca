@@ -60,7 +60,7 @@
     "@types/sprintf-js": "^1.1.1",
     "@types/strip-bom": "^3.0.0",
     "@types/yargs": "^13.0.0",
-    "axios": "^0.18.1",
+    "axios": "^0.21.1",
     "babylon": "^6.18.0",
     "copyfiles": "^2.1.0",
     "fs-extra": "^7.0.1",
