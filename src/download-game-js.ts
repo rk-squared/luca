@@ -61,6 +61,8 @@ const allJsFiles = battleJsFiles.concat([
   'js/templates_event/rotation.js',
   'js/event/original_scenario/app.js',
   'js/templates_event/original_scenario.js',
+  '/js/event/labyrinth/app.js',
+  '/js/templates_event/labyrinth.js',
   'js/app.js',
 ]);
 
