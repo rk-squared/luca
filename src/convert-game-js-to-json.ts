@@ -7,6 +7,7 @@ import { logger } from './logger';
 import { LangType } from './util';
 
 import * as _ from 'lodash';
+import { sprintf } from 'sprintf-js';
 
 const safeEval = require('safe-eval');
 const underscore = require('underscore');
@@ -129,6 +130,7 @@ const gameModules = new ModuleSet([
 const FF: any = {
   ns: {
     battle: {
+      statusAilmentsConfig: {},
       util: {},
     },
   },
@@ -160,6 +162,7 @@ const gameContext = {
 
   FF,
   _: underscore,
+  sprintf,
 };
 
 function getAllStatusAilments() {
